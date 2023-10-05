@@ -11,6 +11,7 @@ public class Client {
 
     private static ArrayList<String> currentClients;
     private static Socket socket;
+
     public static void connect(String[] server, String user) throws InterruptedException {
         try {
             socket = new Socket(server[0], Integer.parseInt(server[1]));
@@ -21,7 +22,7 @@ public class Client {
             out.println(user);
             connected = true;
             currentClients = new ArrayList<>();
-            GUI.addText(user);
+            requestClientList(out);
 
 
             // Create a separate thread to handle receiving messages from the server
@@ -29,11 +30,13 @@ public class Client {
                 try {
                     String message;
                     while ((message = in.readLine()) != null) {
-                        if(message.startsWith("CLIENT_LIST:")) {
+                        if (message.startsWith("CLIENT_LIST:")) {
+                            System.out.println("HI"+ message);
                             message = message.substring("CLIENT_LIST:".length());
                             ArrayList<String> clients = new ArrayList<>(Arrays.asList(message.split(",")));
                             currentClients = clients;
-                        }else {
+                            clients.get(0);
+                        } else {
                             System.out.println(message);
                         }
                     }
@@ -42,8 +45,8 @@ public class Client {
                 }
             }).start();
             new Thread(() -> {
-                try{
-                    while(true) {
+                try {
+                    while (true) {
                         Thread.sleep(10000);
                         requestClientList(out);
                     }
@@ -67,14 +70,16 @@ public class Client {
         } catch (IOException e) {
             connected = false;
             System.out.println(e);
-            if(e.getMessage().contains("Connection Reset") || e.getMessage().contains("Connection refused: connect")){
+            if (e.getMessage().contains("Connection Reset") || e.getMessage().contains("Connection refused: connect")) {
                 System.out.println("Server Not Available");
             }
         }
     }
-    public static boolean isConnected(){
+
+    public static boolean isConnected() {
         return connected;
     }
+
     public static void requestClientList(PrintWriter out) throws InterruptedException {
         GUI.clear();
         final String[] clients = {null};
@@ -85,8 +90,8 @@ public class Client {
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
-            for(String x:currentClients) {
-                clients[0] += (x)+("\n");
+            for (String x : currentClients) {
+                clients[0] += (x) + ("\n");
             }
             try {
                 GUI.addText(clients[0]);
@@ -94,7 +99,7 @@ public class Client {
                 throw new RuntimeException(e);
             }
         }).start();
-    }
+}
     public static void killSocket() throws IOException {
         socket.close();
     }
