@@ -108,10 +108,11 @@ public class GUI {
             textArea.setCaretPosition(textArea.getDocument().getLength());
         }
     }
-    public static String getUser(){
-        return connectUser.getText();
+    public static void clear(){
+        users.setText("");
     }
     public static void addText(String x) throws InterruptedException {
-        users.append(x);
+        String str = x.replace("null","");
+        users.append(str);
     }
 }
