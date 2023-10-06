@@ -12,6 +12,9 @@ public class Client {
     private static ArrayList<String> currentClients;
     private static Socket socket;
 
+    public static String message;
+
+
     public static void connect(String[] server, String user) throws InterruptedException {
         try {
             socket = new Socket(server[0], Integer.parseInt(server[1]));
@@ -27,48 +30,57 @@ public class Client {
 
             // Create a separate thread to handle receiving messages from the server
             new Thread(() -> {
-                try {
-                    String message;
-                    while ((message = in.readLine()) != null) {
-                        if (message.startsWith("CLIENT_LIST:")) {
-                            System.out.println("HI"+ message);
-                            message = message.substring("CLIENT_LIST:".length());
-                            ArrayList<String> clients = new ArrayList<>(Arrays.asList(message.split(",")));
-                            currentClients = clients;
-                            clients.get(0);
-                        } else {
-                            System.out.println(message);
+                while (connected) {
+                    try {
+                        String message;
+                        while ((message = in.readLine()) != null) {
+                            if (message.startsWith("CLIENT_LIST:")) {
+                                message = message.substring("CLIENT_LIST:".length());
+                                ArrayList<String> clients = new ArrayList<>(Arrays.asList(message.split(",")));
+                                currentClients = clients;
+                                clients.get(0);
+                            } else {
+                                System.out.println(message);
+                                message = null;
+                            }
+                        }
+                    } catch (IOException e) {
+                        if(!e.toString().contains("Socket closed")) {
+                            e.printStackTrace();
                         }
                     }
-                } catch (IOException e) {
-                    e.printStackTrace();
                 }
             }).start();
             new Thread(() -> {
-                try {
-                    while (true) {
-                        Thread.sleep(10000);
-                        requestClientList(out);
+                while (connected) {
+                    try {
+                        while (true) {
+                            Thread.sleep(10000);
+                            requestClientList(out);
+                        }
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
                     }
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
                 }
             }).start();
-            System.out.println("Type 'exit' to quit.");
-            String message;
-            while ((message = in.readLine()) != null) {
-                if (message.startsWith("CLIENT_LIST:")) {
-                    message = message.substring("CLIENT_LIST:".length());
-                    ArrayList<String> clients = new ArrayList<>(Arrays.asList(message.split(",")));
-                    currentClients = clients;
-                } else {
-                    System.out.println(message);
+            System.out.println("Don't be A Jerk!");
+            while (true) {
+                while (message != null) {
+                    if (message.startsWith("CLIENT_LIST:")) {
+                        message = message.substring("CLIENT_LIST:".length());
+                        ArrayList<String> clients = new ArrayList<>(Arrays.asList(message.split(",")));
+                        currentClients = clients;
+                    } else {
+                        out.println(message);
+                        message = null;
+                    }
                 }
+                Thread.sleep(100);
             }
-            connected = false;
-            socket.close();
         } catch (IOException e) {
             connected = false;
+            System.out.println("HIIII");
+
             System.out.println(e);
             if (e.getMessage().contains("Connection Reset") || e.getMessage().contains("Connection refused: connect")) {
                 System.out.println("Server Not Available");
@@ -81,26 +93,37 @@ public class Client {
     }
 
     public static void requestClientList(PrintWriter out) throws InterruptedException {
-        GUI.clear();
-        final String[] clients = {null};
-        out.println("GET_CLIENTS");
-        new Thread(() -> {
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-            for (String x : currentClients) {
-                clients[0] += (x) + ("\n");
-            }
-            try {
-                GUI.addText(clients[0]);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-        }).start();
+        if(connected) {
+            GUI.clear();
+            final String[] clients = {null};
+            out.println("GET_CLIENTS");
+            new Thread(() -> {
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+                for (String x : currentClients) {
+                    clients[0] += (x) + ("\n");
+                }
+                try {
+                    GUI.addText(clients[0]);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }).start();
+        }
 }
-    public static void killSocket() throws IOException {
-        socket.close();
+    public static void disconnect() throws IOException, InterruptedException {
+        if(connected) {
+            Thread.sleep(1000);
+            GUI.clear();
+            message = "has left!";
+            connected = false;
+            Thread.sleep(100);
+            socket.close();
+        }else {
+            System.out.println("Not Connected!");
+        }
     }
 }
