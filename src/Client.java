@@ -118,7 +118,6 @@ public class Client {
         if(connected) {
             Thread.sleep(1000);
             GUI.clear();
-            message = "has left!";
             connected = false;
             Thread.sleep(100);
             socket.close();
