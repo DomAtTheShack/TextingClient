@@ -25,6 +25,7 @@ public class Client {
             out.println(user);
             connected = true;
             currentClients = new ArrayList<>();
+            Thread.sleep(1000);
             requestClientList(out);
 
 
