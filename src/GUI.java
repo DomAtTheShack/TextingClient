@@ -29,7 +29,7 @@ public class GUI {
 
             public void actionPerformed(ActionEvent e){
                 if(Client.isConnected()) {
-                    Client.message = sendMessage.getText();
+                    Client.message = new Message(sendMessage.getText(),false,false);
                     sendMessage.setText("");
                 }else {
                     System.out.println("Not Connected");

@@ -1,6 +1,5 @@
-import javax.jws.Oneway;
 import java.io.*;
-import java.net.*;
+import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -8,47 +7,46 @@ import java.util.List;
 public class Client {
 
     private static boolean connected;
-
-    private static ArrayList<String> currentClients;
+    private static List<String> currentClients;
     private static Socket socket;
-
-    public static String message;
-
+    public static Message message;
 
     public static void connect(String[] server, String user) throws InterruptedException {
         try {
             socket = new Socket(server[0], Integer.parseInt(server[1]));
-            PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+            ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            BufferedReader userInput = new BufferedReader(new InputStreamReader(System.in));
 
-            out.println(user);
+            // Send the user information
+            Message userMessage = new Message(user, false, false);
+            Message.sendObject(out,userMessage);
             connected = true;
             currentClients = new ArrayList<>();
             Thread.sleep(1000);
             requestClientList(out);
 
-
             // Create a separate thread to handle receiving messages from the server
             new Thread(() -> {
-                while (connected) {
-                    try {
-                        String message;
-                        while ((message = in.readLine()) != null) {
-                            if (message.startsWith("CLIENT_LIST:")) {
-                                message = message.substring("CLIENT_LIST:".length());
-                                ArrayList<String> clients = new ArrayList<>(Arrays.asList(message.split(",")));
-                                currentClients = clients;
-                                clients.get(0);
+                try {
+                    ObjectInputStream objectInputStream = new ObjectInputStream(socket.getInputStream());
+
+                    while (connected) {
+                        // Receive Message object
+                        Message receivedMessage = Message.receiveObject(objectInputStream);
+
+                        if (receivedMessage != null) {
+                            if (receivedMessage.isRequest()) {
+                                // Handle CLIENT_LIST response
+                                currentClients = receivedMessage.getUsers();
                             } else {
-                                System.out.println(message);
-                                message = null;
+                                // Handle regular messages
+                                System.out.println(receivedMessage.getMessage());
                             }
                         }
-                    } catch (IOException e) {
-                        if(!e.toString().contains("Socket closed")) {
-                            e.printStackTrace();
-                        }
+                    }
+                } catch (IOException | ClassNotFoundException e) {
+                    if (!e.toString().contains("Socket closed")) {
+                        e.printStackTrace();
                     }
                 }
             }).start();
@@ -59,7 +57,7 @@ public class Client {
                             Thread.sleep(10000);
                             requestClientList(out);
                         }
-                    } catch (InterruptedException e) {
+                    } catch (InterruptedException | IOException e) {
                         throw new RuntimeException(e);
                     }
                 }
@@ -67,21 +65,13 @@ public class Client {
             System.out.println("Don't be A Jerk!");
             while (true) {
                 while (message != null) {
-                    if (message.startsWith("CLIENT_LIST:")) {
-                        message = message.substring("CLIENT_LIST:".length());
-                        ArrayList<String> clients = new ArrayList<>(Arrays.asList(message.split(",")));
-                        currentClients = clients;
-                    } else {
-                        out.println(message);
-                        message = null;
-                    }
+                    Message.sendObject(out, message);
+                    message = null;
                 }
                 Thread.sleep(100);
             }
         } catch (IOException e) {
             connected = false;
-            System.out.println("HIIII");
-
             System.out.println(e);
             if (e.getMessage().contains("Connection Reset") || e.getMessage().contains("Connection refused: connect")) {
                 System.out.println("Server Not Available");
@@ -93,11 +83,13 @@ public class Client {
         return connected;
     }
 
-    public static void requestClientList(PrintWriter out) throws InterruptedException {
-        if(connected) {
+    public static void requestClientList(ObjectOutputStream out) throws InterruptedException, IOException {
+        if (connected) {
             GUI.clear();
             final String[] clients = {null};
-            out.println("GET_CLIENTS");
+            Message requestMessage = new Message(false, true);
+            Message.sendObject(out, requestMessage);
+
             new Thread(() -> {
                 try {
                     Thread.sleep(100);
@@ -114,15 +106,16 @@ public class Client {
                 }
             }).start();
         }
-}
+    }
+
     public static void disconnect() throws IOException, InterruptedException {
-        if(connected) {
+        if (connected) {
             Thread.sleep(1000);
             GUI.clear();
             connected = false;
             Thread.sleep(100);
             socket.close();
-        }else {
+        } else {
             System.out.println("Not Connected!");
         }
     }
