@@ -1,7 +1,10 @@
+import javafx.scene.media.Media;
+import javafx.scene.media.MediaPlayer;
 import sun.awt.im.SimpleInputMethodWindow;
 
 import javax.annotation.processing.FilerException;
 import javax.imageio.ImageIO;
+import javax.sound.sampled.*;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -16,10 +19,11 @@ public class GUI {
     private static JTextArea users = new JTextArea();
     private static JScrollPane userPane;
     private static String imagePath;
+    private static JFrame f = new JFrame();
+
 
 
     public static void main(String[] args) {
-        JFrame f = new JFrame();
         JButton connect = new JButton("Connect");
         ImageIcon imageC = new ImageIcon("images/image.png");
         ImageIcon audioC = new ImageIcon("image/audio.png");
@@ -277,4 +281,32 @@ public class GUI {
         }
         return false;
     }
+    public static void playSound() {
+        java.awt.Toolkit toolkit = java.awt.Toolkit.getDefaultToolkit();
+        toolkit.beep();  // Play a beep sound
+        playWav();
+        f.toFront();  // Bring the frame to the front
+
+    }
+    public static void playWav() {
+        try
+        {
+            Clip clip = AudioSystem.getClip();
+            clip.open(AudioSystem.getAudioInputStream(new File("sounds/ping.wav")));
+            clip.start();
+            FloatControl gainControl = (FloatControl) clip.getControl(FloatControl.Type.MASTER_GAIN);
+            gainControl.setValue(-25.0f);
+
+            // Wait for the sound to finish
+            Thread.sleep(clip.getMicrosecondLength() / 1000);
+
+            // Close the clip
+            clip.close();
+        }
+        catch (Exception exc)
+        {
+            exc.printStackTrace(System.out);
+        }
+    }
+
 }

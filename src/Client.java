@@ -43,9 +43,11 @@ public class Client {
                                 currentClients = receivedMessage.getUsers();
                             } else if (receivedMessage.isImage()) {
                                 GUI.openImage(receivedMessage.getImageData(),receivedMessage.getUserSent());
+                                GUI.playWav();
                             } else {
                                 // Handle regular messages
                                 System.out.println(receivedMessage.getMessage());
+                                GUI.playWav();
                             }
                         }
                     }
