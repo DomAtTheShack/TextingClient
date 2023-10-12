@@ -11,11 +11,13 @@ public class GUI {
     private static final JTextField connectUser = new JTextField();
     private static JTextArea users = new JTextArea();
     private static JScrollPane userPane;
+    private static String imagePath;
 
 
     public static void main(String[] args) {
         JFrame f = new JFrame();
         JButton connect = new JButton("Connect");
+        JButton image = new JButton("Select Image");
         final JTextField connectIP = new JTextField();
         JTextField sendMessage = new JTextField();
         final JTextField connectUser = new JTextField();
@@ -44,6 +46,7 @@ public class GUI {
         connectedUsers.setBounds(600, 10, 120, 20);
         sendMessage.setBounds(20, 285, 580, 40);
         disconnect.setBounds(620,305,140,20);
+        image.setBounds(620,275,140,20);
 
         consoleTextArea = new JTextArea();
         consoleTextArea.setEditable(false);
@@ -63,6 +66,7 @@ public class GUI {
         userPane.setBounds(590, 40, 120, 230);
 
         f.add(userPane);
+        f.add(image);
         f.add(sendMessage);
         f.add(scrollPane);
         f.add(connect);
@@ -77,6 +81,27 @@ public class GUI {
         f.setVisible(true);
         f.setResizable(false);
         f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+        image.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+
+                JFrame frame = new JFrame("File Explorer Example");
+                frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                frame.setSize(400, 300);
+                JFileChooser fileChooser = new JFileChooser();
+                fileChooser.setDialogTitle("Open");
+                fileChooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
+                int result = fileChooser.showOpenDialog(frame);
+                if (result == JFileChooser.APPROVE_OPTION) {
+                    imagePath = fileChooser.getSelectedFile().getAbsolutePath();
+                }
+                frame.setVisible(true);
+                frame.dispose();
+            }
+            });
+
+
 
         connect.addActionListener(new ActionListener() {
             @Override
