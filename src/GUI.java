@@ -1,9 +1,12 @@
+import sun.awt.im.SimpleInputMethodWindow;
+
+import javax.imageio.ImageIO;
 import javax.swing.*;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.PrintStream;
+import java.awt.image.BufferedImage;
+import java.io.*;
 
 public class GUI {
     private static JTextArea consoleTextArea;
@@ -26,17 +29,6 @@ public class GUI {
         JLabel usernameLabel = new JLabel("Username");
         JLabel connectedUsers = new JLabel("People Connected");
         f.setTitle("ChatterBox");
-
-        sendMessage.addActionListener(new ActionListener(){
-
-            public void actionPerformed(ActionEvent e){
-                if(Client.isConnected()) {
-                    Client.message = new Message(sendMessage.getText(),false,false);
-                    sendMessage.setText("");
-                }else {
-                    System.out.println("Not Connected");
-                }
-            }});
 
         connectIP.setBounds(150, 335, 200, 20);
         connect.setBounds(620, 335, 140, 20);
@@ -98,10 +90,25 @@ public class GUI {
                 }
                 frame.setVisible(true);
                 frame.dispose();
+                try {
+                    Message.sendObject(Client.out, sendImage(imagePath));
+                } catch (IOException ex) {
+                    throw new RuntimeException(ex);
+                }
             }
             });
 
 
+        sendMessage.addActionListener(new ActionListener(){
+
+            public void actionPerformed(ActionEvent e){
+                if(Client.isConnected()) {
+                    Client.message = new Message(sendMessage.getText(),false,false);
+                    sendMessage.setText("");
+                }else {
+                    System.out.println("Not Connected");
+                }
+            }});
 
         connect.addActionListener(new ActionListener() {
             @Override
@@ -151,6 +158,79 @@ public class GUI {
 
     }
 
+    public static void openImage(byte[] imageData, String userSent) throws IOException {
+        final boolean[] display = {false};
+        JFrame frame = new JFrame("Display Image");
+        JLabel user = new JLabel("An Image was sent by " + userSent);
+        JButton yes = new JButton("Yes");
+        JButton no = new JButton("No");
+
+        user.setBounds(90, 20, 300, 40);
+        yes.setBounds(100, 100, 80, 30);
+        no.setBounds(200, 100, 80, 30);
+
+        frame.setLayout(null);  // Use null layout for manual positioning
+        frame.setSize(400, 200);
+        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        frame.setResizable(false);
+
+        yes.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                display[0] = true;
+            }
+        });
+
+        no.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                display[0] = false;
+            }
+        });
+
+        frame.add(user);
+        frame.add(yes);
+        frame.add(no);
+        frame.setVisible(true);
+
+        yes.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                frame.dispose();
+                JFrame f = new JFrame();
+                f.setTitle("Image Display from Byte Array");
+                f.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+
+                // Convert byte[] to ImageIcon
+                ImageIcon imageIcon = new ImageIcon(imageData);
+                Image image = imageIcon.getImage();
+
+                // Create a BufferedImage from the Image
+                BufferedImage bufferedImage = new BufferedImage(image.getWidth(null), image.getHeight(null), BufferedImage.TYPE_INT_RGB);
+                Graphics g = bufferedImage.createGraphics();
+                g.drawImage(image, 0, 0, null);
+                g.dispose();
+
+                // Create a JLabel to hold the image
+                JLabel label = new JLabel(new ImageIcon(bufferedImage));
+
+                // Add the label to the JFrame
+                f.getContentPane().add(label);
+
+                // Set frame properties
+                f.pack(); // Adjusts the frame size to fit the image
+                f.setLocationRelativeTo(null); // Centers the frame on the screen
+                f.setVisible(true);
+            }
+        });
+        no.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                frame.dispose();
+            }
+        });
+    }
+
     private static class CustomOutputStream extends OutputStream {
         private final JTextArea textArea;
 
@@ -170,5 +250,18 @@ public class GUI {
     public static void addText(String x) throws InterruptedException {
         String str = x.replace("null","");
         users.append(str);
+    }
+    public static Message sendImage(String path) throws IOException {
+        BufferedImage image = ImageIO.read(new File(path));
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ImageIO.write(image, "jpg", baos);
+        byte[] imageByteArray = baos.toByteArray();
+
+        // Create the message with the image data
+        return new Message(imageByteArray,true,users.getText());
+    }
+    private static BufferedImage loadImageFromByteArray(byte[] imageData) throws IOException {
+        ByteArrayInputStream bis = new ByteArrayInputStream(imageData);
+        return ImageIO.read(bis);
     }
 }

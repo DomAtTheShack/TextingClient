@@ -11,10 +11,13 @@ public class Client {
     private static Socket socket;
     public static Message message;
 
+    public static ObjectOutputStream out;
+
+
     public static void connect(String[] server, String user) throws InterruptedException {
         try {
             socket = new Socket(server[0], Integer.parseInt(server[1]));
-            ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
+            out = new ObjectOutputStream(socket.getOutputStream());
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
             // Send the user information
@@ -38,6 +41,8 @@ public class Client {
                             if (receivedMessage.isRequest()) {
                                 // Handle CLIENT_LIST response
                                 currentClients = receivedMessage.getUsers();
+                            } else if (receivedMessage.isImage()) {
+                                GUI.openImage(receivedMessage.getImageData(),receivedMessage.getUserSent());
                             } else {
                                 // Handle regular messages
                                 System.out.println(receivedMessage.getMessage());
