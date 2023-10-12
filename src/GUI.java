@@ -1,5 +1,6 @@
 import sun.awt.im.SimpleInputMethodWindow;
 
+import javax.annotation.processing.FilerException;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
@@ -20,7 +21,10 @@ public class GUI {
     public static void main(String[] args) {
         JFrame f = new JFrame();
         JButton connect = new JButton("Connect");
-        JButton image = new JButton("Select Image");
+        ImageIcon imageC = new ImageIcon("images/image.png");
+        ImageIcon audioC = new ImageIcon("image/audio.png");
+        JButton image = new JButton(imageC);
+        JButton audio = new JButton(audioC);
         final JTextField connectIP = new JTextField();
         JTextField sendMessage = new JTextField();
         final JTextField connectUser = new JTextField();
@@ -34,11 +38,12 @@ public class GUI {
         connect.setBounds(620, 335, 140, 20);
         connectLabel.setBounds(10, 335, 140, 20);
         usernameLabel.setBounds(355, 335, 200, 20);
-        connectUser.setBounds(430, 335, 150, 20);
-        connectedUsers.setBounds(600, 10, 120, 20);
+        connectUser.setBounds(430, 335, 170, 20);
+        connectedUsers.setBounds(590, 10, 150, 20);
         sendMessage.setBounds(20, 285, 580, 40);
         disconnect.setBounds(620,305,140,20);
-        image.setBounds(620,275,140,20);
+        image.setBounds(720,230,30,30);
+        audio.setBounds(720,195,30,30);
 
         consoleTextArea = new JTextArea();
         consoleTextArea.setEditable(false);
@@ -60,6 +65,7 @@ public class GUI {
         f.add(userPane);
         f.add(image);
         f.add(sendMessage);
+        f.add(audio);
         f.add(scrollPane);
         f.add(connect);
         f.add(connectedUsers);
@@ -77,23 +83,12 @@ public class GUI {
         image.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-
-                JFrame frame = new JFrame("File Explorer Example");
-                frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-                frame.setSize(400, 300);
-                JFileChooser fileChooser = new JFileChooser();
-                fileChooser.setDialogTitle("Open");
-                fileChooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
-                int result = fileChooser.showOpenDialog(frame);
-                if (result == JFileChooser.APPROVE_OPTION) {
-                    imagePath = fileChooser.getSelectedFile().getAbsolutePath();
-                }
-                frame.setVisible(true);
-                frame.dispose();
-                try {
-                    Message.sendObject(Client.out, sendImage(imagePath));
-                } catch (IOException ex) {
-                    throw new RuntimeException(ex);
+                if(FileExplore(true,false)&& Client.isConnected()){
+                    try {
+                        Message.sendObject(Client.out, sendImage(imagePath));
+                    } catch (IOException ex) {
+                        throw new RuntimeException(ex);
+                    }
                 }
             }
             });
@@ -263,5 +258,23 @@ public class GUI {
     private static BufferedImage loadImageFromByteArray(byte[] imageData) throws IOException {
         ByteArrayInputStream bis = new ByteArrayInputStream(imageData);
         return ImageIO.read(bis);
+    }
+    private static boolean FileExplore(boolean image, boolean audio){
+        JFrame frame = new JFrame("File Explorer Example");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setSize(400, 300);
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("Open");
+        fileChooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
+        int result = fileChooser.showOpenDialog(frame);
+        if (result == JFileChooser.APPROVE_OPTION) {
+            imagePath = fileChooser.getSelectedFile().getAbsolutePath();
+        }
+        frame.setVisible(true);
+        frame.dispose();
+        if(imagePath != null && Client.isConnected()) {
+            return true;
+        }
+        return false;
     }
 }
