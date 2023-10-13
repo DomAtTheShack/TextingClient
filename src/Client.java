@@ -1,7 +1,6 @@
 import java.io.*;
 import java.net.Socket;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class Client {
@@ -12,17 +11,18 @@ public class Client {
     public static Message message;
 
     public static ObjectOutputStream out;
+    private static String username;
 
 
     public static void connect(String[] server, String user) throws InterruptedException {
         try {
             socket = new Socket(server[0], Integer.parseInt(server[1]));
             out = new ObjectOutputStream(socket.getOutputStream());
-            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
             // Send the user information
             Message userMessage = new Message(user, false, false);
-            Message.sendObject(out,userMessage);
+            username = user;
+            Message.sendObjectAsync(out,userMessage);
             connected = true;
             currentClients = new ArrayList<>();
             Thread.sleep(1000);
@@ -42,12 +42,15 @@ public class Client {
                                 // Handle CLIENT_LIST response
                                 currentClients = receivedMessage.getUsers();
                             } else if (receivedMessage.isImage()) {
-                                GUI.openImage(receivedMessage.getImageData(),receivedMessage.getUserSent());
-                                GUI.playWav();
+                                GUI.openImage(receivedMessage.getByteData(),receivedMessage.getUserSent());
+                                GUI.playSound();
+                            } else if(receivedMessage.isAudio()){
+                                GUI.playAudio(receivedMessage.getByteData());
+                                GUI.playSound();
                             } else {
                                 // Handle regular messages
                                 System.out.println(receivedMessage.getMessage());
-                                GUI.playWav();
+                                GUI.playSound();
                             }
                         }
                     }
@@ -72,14 +75,14 @@ public class Client {
             System.out.println("Don't be A Jerk!");
             while (true) {
                 while (message != null) {
-                    Message.sendObject(out, message);
+                    Message.sendObjectAsync(out, message);
                     message = null;
                 }
                 Thread.sleep(100);
             }
         } catch (IOException e) {
             connected = false;
-            System.out.println(e);
+            e.printStackTrace();
             if (e.getMessage().contains("Connection Reset") || e.getMessage().contains("Connection refused: connect")) {
                 System.out.println("Server Not Available");
             }
@@ -95,7 +98,7 @@ public class Client {
             GUI.clear();
             final String[] clients = {null};
             Message requestMessage = new Message(false, true);
-            Message.sendObject(out, requestMessage);
+            Message.sendObjectAsync(out, requestMessage);
 
             new Thread(() -> {
                 try {
@@ -125,5 +128,9 @@ public class Client {
         } else {
             System.out.println("Not Connected!");
         }
+    }
+
+    public static String getUsername() {
+        return username;
     }
 }

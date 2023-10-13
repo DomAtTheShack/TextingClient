@@ -1,8 +1,3 @@
-import javafx.scene.media.Media;
-import javafx.scene.media.MediaPlayer;
-import sun.awt.im.SimpleInputMethodWindow;
-
-import javax.annotation.processing.FilerException;
 import javax.imageio.ImageIO;
 import javax.sound.sampled.*;
 import javax.swing.*;
@@ -11,6 +6,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.*;
+import java.net.URL;
 
 public class GUI {
     private static JTextArea consoleTextArea;
@@ -20,13 +16,16 @@ public class GUI {
     private static JScrollPane userPane;
     private static String imagePath;
     private static JFrame f = new JFrame();
+    private static String audioPath;
 
 
 
     public static void main(String[] args) {
         JButton connect = new JButton("Connect");
-        ImageIcon imageC = new ImageIcon("images/image.png");
-        ImageIcon audioC = new ImageIcon("image/audio.png");
+        URL imageUrl = GUI.class.getResource("images/image.png");
+        ImageIcon imageC = new ImageIcon(imageUrl);
+        URL audioUrl = GUI.class.getResource("images/audio.png");
+        ImageIcon audioC = new ImageIcon(audioUrl);
         JButton image = new JButton(imageC);
         JButton audio = new JButton(audioC);
         final JTextField connectIP = new JTextField();
@@ -89,7 +88,8 @@ public class GUI {
             public void actionPerformed(ActionEvent e) {
                 if(FileExplore(true,false)&& Client.isConnected()){
                     try {
-                        Message.sendObject(Client.out, sendImage(imagePath));
+                        Message.sendObjectAsync(Client.out, sendImage(imagePath));
+                        imagePath = null;
                     } catch (IOException ex) {
                         throw new RuntimeException(ex);
                     }
@@ -154,7 +154,36 @@ public class GUI {
                 }
             }
         });
+        audio.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if(FileExplore(false,true)&& Client.isConnected()){
+                    try {
+                        Message.sendObjectAsync(Client.out, sendAudio(audioPath));
+                    } catch (IOException ex) {
+                        throw new RuntimeException(ex);
+                    }
+                }
+            }
+        });
 
+    }
+
+    private static Message sendAudio(String audioPath) throws IOException {
+        byte[] audioData = loadAudioFileToByteArray(audioPath);
+
+        // Create the message with the audio data
+        return new Message(audioData,false,true,users.getText());
+    }
+    private static byte[] loadAudioFileToByteArray(String filePath) throws IOException {
+        File audioFile = new File(filePath);
+        byte[] audioData = new byte[(int) audioFile.length()];
+
+        try (FileInputStream fileInputStream = new FileInputStream(audioFile)) {
+            fileInputStream.read(audioData);
+        }
+
+        return audioData;
     }
 
     public static void openImage(byte[] imageData, String userSent) throws IOException {
@@ -257,7 +286,7 @@ public class GUI {
         byte[] imageByteArray = baos.toByteArray();
 
         // Create the message with the image data
-        return new Message(imageByteArray,true,users.getText());
+        return new Message(imageByteArray,true,false, Client.getUsername());
     }
     private static BufferedImage loadImageFromByteArray(byte[] imageData) throws IOException {
         ByteArrayInputStream bis = new ByteArrayInputStream(imageData);
@@ -282,17 +311,20 @@ public class GUI {
         return false;
     }
     public static void playSound() {
-        java.awt.Toolkit toolkit = java.awt.Toolkit.getDefaultToolkit();
-        toolkit.beep();  // Play a beep sound
-        playWav();
-        f.toFront();  // Bring the frame to the front
-
+        if(!f.isFocused()) {
+            java.awt.Toolkit toolkit = java.awt.Toolkit.getDefaultToolkit();
+            toolkit.beep();  // Play a beep sound
+            new Thread(GUI::playWav).start();
+            f.toFront();  // Bring the frame to the front
+            toolkit.beep();  // Play a beep sound
+        }
     }
     public static void playWav() {
         try
         {
             Clip clip = AudioSystem.getClip();
-            clip.open(AudioSystem.getAudioInputStream(new File("sounds/ping.wav")));
+            URL pingUrl = GUI.class.getResource("sounds/ping.wav");
+            clip.open(AudioSystem.getAudioInputStream(pingUrl));
             clip.start();
             FloatControl gainControl = (FloatControl) clip.getControl(FloatControl.Type.MASTER_GAIN);
             gainControl.setValue(-25.0f);
@@ -307,6 +339,9 @@ public class GUI {
         {
             exc.printStackTrace(System.out);
         }
+    }
+    public static void playAudio(byte[] audioData){
+
     }
 
 }

@@ -13,11 +13,12 @@ import java.util.List;
 public class Message implements Serializable {
 
     private String message;
-    private boolean isImage;
+    private final boolean isImage;
     private boolean isRequest;
     private List<String> users;
     private String userSent;
     private byte[] image;
+    private boolean isAudio;
 
 
     /**
@@ -43,8 +44,9 @@ public class Message implements Serializable {
         this.isRequest = isRequest;
     }
 
-    public Message(byte[] imageByteArray, boolean isImage, String userSent) {
+    public Message(byte[] imageByteArray, boolean isImage, boolean isAudio, String userSent) {
         this.isImage = isImage;
+        this.isAudio = isAudio;
         this.userSent = userSent;
         image = imageByteArray;
     }
@@ -55,6 +57,9 @@ public class Message implements Serializable {
 
     public boolean isImage() {
         return isImage;
+    }
+    public boolean isAudio(){
+        return isAudio;
     }
 
     public boolean isRequest() {
@@ -68,16 +73,23 @@ public class Message implements Serializable {
         return userSent;
     }
 
-    public static void sendObject(ObjectOutputStream objectOutputStream, Message message) throws IOException {
-        objectOutputStream.writeObject(message);
-        objectOutputStream.flush();
+    public static void sendObjectAsync(ObjectOutputStream objectOutputStream, Message message) {
+        Thread senderThread = new Thread(() -> {
+            try {
+                objectOutputStream.writeObject(message);
+                objectOutputStream.flush();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
+        senderThread.start();
     }
 
     public static Message receiveObject(ObjectInputStream objectInputStream) throws IOException, ClassNotFoundException {
         return (Message) objectInputStream.readObject();
     }
 
-    public byte[] getImageData() {
+    public byte[] getByteData() {
         return image;
     }
 }
