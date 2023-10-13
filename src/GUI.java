@@ -7,8 +7,6 @@ import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.URL;
-import javafx.scene.media.Media;
-import javafx.scene.media.MediaPlayer;
 
 public class GUI {
     private static JTextArea consoleTextArea;

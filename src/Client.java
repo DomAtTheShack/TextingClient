@@ -73,7 +73,7 @@ public class Client {
                     }
                 }
             }).start();
-            System.out.println("Don't be A Jerk!");
+            System.out.println("Don't be like Jorge!");
             while (true) {
                 while (message != null) {
                     Message.sendObjectAsync(out, message);
