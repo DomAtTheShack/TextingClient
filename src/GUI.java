@@ -7,6 +7,8 @@ import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.URL;
+import javafx.scene.media.Media;
+import javafx.scene.media.MediaPlayer;
 
 public class GUI {
     private static JTextArea consoleTextArea;
@@ -160,6 +162,7 @@ public class GUI {
                 if(FileExplore(false,true)&& Client.isConnected()){
                     try {
                         Message.sendObjectAsync(Client.out, sendAudio(audioPath));
+                        audioPath = null;
                     } catch (IOException ex) {
                         throw new RuntimeException(ex);
                     }
@@ -300,8 +303,10 @@ public class GUI {
         fileChooser.setDialogTitle("Open");
         fileChooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
         int result = fileChooser.showOpenDialog(frame);
-        if (result == JFileChooser.APPROVE_OPTION) {
+        if (result == JFileChooser.APPROVE_OPTION && image) {
             imagePath = fileChooser.getSelectedFile().getAbsolutePath();
+        } else if (result == JFileChooser.APPROVE_OPTION && audio){
+            audioPath = fileChooser.getSelectedFile().getAbsolutePath();
         }
         frame.setVisible(true);
         frame.dispose();
@@ -340,8 +345,4 @@ public class GUI {
             exc.printStackTrace(System.out);
         }
     }
-    public static void playAudio(byte[] audioData){
-
-    }
-
 }

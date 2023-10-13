@@ -45,7 +45,8 @@ public class Client {
                                 GUI.openImage(receivedMessage.getByteData(),receivedMessage.getUserSent());
                                 GUI.playSound();
                             } else if(receivedMessage.isAudio()){
-                                GUI.playAudio(receivedMessage.getByteData());
+                                System.out.println("HI");
+                                AudioPlayer.playAudio(receivedMessage.getByteData());
                                 GUI.playSound();
                             } else {
                                 // Handle regular messages
