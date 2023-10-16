@@ -8,10 +8,12 @@ public class Client {
     private static boolean connected;
     private static List<String> currentClients;
     private static Socket socket;
-    public static Message message;
+    public static Packet packet;
 
     public static ObjectOutputStream out;
     private static String username;
+
+    private static int room;
 
 
     public static void connect(String[] server, String user) throws InterruptedException {
@@ -20,9 +22,9 @@ public class Client {
             out = new ObjectOutputStream(socket.getOutputStream());
 
             // Send the user information
-            Message userMessage = new Message(user, false, false);
+            Packet userPacket = new Packet(user, Packet.Type.Message, getRoom());
             username = user;
-            Message.sendObjectAsync(out,userMessage);
+            Packet.sendObjectAsync(out, userPacket);
             connected = true;
             currentClients = new ArrayList<>();
             Thread.sleep(1000);
@@ -35,22 +37,23 @@ public class Client {
 
                     while (connected) {
                         // Receive Message object
-                        Message receivedMessage = Message.receiveObject(objectInputStream);
-
-                        if (receivedMessage != null) {
-                            if (receivedMessage.isRequest()) {
+                        Packet receivedPacket = Packet.receiveObject(objectInputStream);
+                        if (receivedPacket != null) {
+                            if (receivedPacket.getID() == Packet.Type.UserRequest && receivedPacket.getRoom() == room) {
                                 // Handle CLIENT_LIST response
-                                currentClients = receivedMessage.getUsers();
-                            } else if (receivedMessage.isImage()) {
-                                GUI.openImage(receivedMessage.getByteData(),receivedMessage.getUserSent());
+                                currentClients = receivedPacket.getUsers();
+                            } else if(receivedPacket.getID() == Packet.Type.RoomChange){
+                                room = receivedPacket.getRoom();
+                                requestClientList(out);
+                            } else if (receivedPacket.getID() == Packet.Type.Image && receivedPacket.getRoom() == room) {
+                                GUI.openImage(receivedPacket.getByteData(), receivedPacket.getUserSent());
                                 GUI.playSound();
-                            } else if(receivedMessage.isAudio()){
-                                System.out.println("HI");
-                                AudioPlayer.playAudio(receivedMessage.getByteData());
+                            } else if(receivedPacket.getID() == Packet.Type.Audio && receivedPacket.getRoom() == room){
+                                AudioPlayer.playAudio(receivedPacket.getByteData());
                                 GUI.playSound();
-                            } else {
+                            } else if(receivedPacket.getID() == Packet.Type.Message && receivedPacket.getRoom() == room){
                                 // Handle regular messages
-                                System.out.println(receivedMessage.getMessage());
+                                System.out.println(receivedPacket.getMessage());
                                 GUI.playSound();
                             }
                         }
@@ -59,6 +62,8 @@ public class Client {
                     if (!e.toString().contains("Socket closed")) {
                         e.printStackTrace();
                     }
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
                 }
             }).start();
             new Thread(() -> {
@@ -75,9 +80,10 @@ public class Client {
             }).start();
             System.out.println("Don't be like Jorge!");
             while (true) {
-                while (message != null) {
-                    Message.sendObjectAsync(out, message);
-                    message = null;
+                while (packet != null) {
+                    Packet.sendObjectAsync(out, packet);
+                    System.out.println(packet.getRoom());
+                    packet = null;
                 }
                 Thread.sleep(100);
             }
@@ -98,8 +104,8 @@ public class Client {
         if (connected) {
             GUI.clear();
             final String[] clients = {null};
-            Message requestMessage = new Message(false, true);
-            Message.sendObjectAsync(out, requestMessage);
+            Packet requestPacket = new Packet(Packet.Type.UserRequest);
+            Packet.sendObjectAsync(out, requestPacket);
 
             new Thread(() -> {
                 try {
@@ -111,6 +117,7 @@ public class Client {
                     clients[0] += (x) + ("\n");
                 }
                 try {
+                    GUI.addText("Room #" + String.valueOf(room) + "\n");
                     GUI.addText(clients[0]);
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
@@ -121,7 +128,6 @@ public class Client {
 
     public static void disconnect() throws IOException, InterruptedException {
         if (connected) {
-            Thread.sleep(1000);
             GUI.clear();
             connected = false;
             Thread.sleep(100);
@@ -133,5 +139,8 @@ public class Client {
 
     public static String getUsername() {
         return username;
+    }
+    public static int getRoom(){
+        return room;
     }
 }

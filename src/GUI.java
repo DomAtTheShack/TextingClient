@@ -88,7 +88,7 @@ public class GUI {
             public void actionPerformed(ActionEvent e) {
                 if(FileExplore(true,false)&& Client.isConnected()){
                     try {
-                        Message.sendObjectAsync(Client.out, sendImage(imagePath));
+                        Packet.sendObjectAsync(Client.out, sendImage(imagePath));
                         imagePath = null;
                     } catch (IOException ex) {
                         throw new RuntimeException(ex);
@@ -102,7 +102,13 @@ public class GUI {
 
             public void actionPerformed(ActionEvent e){
                 if(Client.isConnected()) {
-                    Client.message = new Message(sendMessage.getText(),false,false);
+                    if(sendMessage.getText().startsWith("/room ")){
+                        if(getRoom(sendMessage.getText()) != -1){
+                            Client.packet = new Packet(getRoom((sendMessage.getText())), Packet.Type.RoomChange, Client.getUsername());
+                        }
+                    }else {
+                        Client.packet = new Packet(sendMessage.getText(), Packet.Type.Message, Client.getRoom());
+                    }
                     sendMessage.setText("");
                 }else {
                     System.out.println("Not Connected");
@@ -159,7 +165,7 @@ public class GUI {
             public void actionPerformed(ActionEvent e) {
                 if(FileExplore(false,true)&& Client.isConnected()){
                     try {
-                        Message.sendObjectAsync(Client.out, sendAudio(audioPath));
+                        Packet.sendObjectAsync(Client.out, sendAudio(audioPath));
                         audioPath = null;
                     } catch (IOException ex) {
                         throw new RuntimeException(ex);
@@ -170,11 +176,23 @@ public class GUI {
 
     }
 
-    private static Message sendAudio(String audioPath) throws IOException {
+    private static int getRoom(String room) {
+        int index = room.indexOf("/room ");
+        if(index != -1){
+            try {
+                return Integer.parseInt(room.substring(index + "/room ".length()));
+            }catch (NumberFormatException e){
+                return -1;
+            }
+        }
+        return -1;
+    }
+
+    private static Packet sendAudio(String audioPath) throws IOException {
         byte[] audioData = loadAudioFileToByteArray(audioPath);
 
         // Create the message with the audio data
-        return new Message(audioData,false,true,users.getText());
+        return new Packet(audioData, Packet.Type.Audio,users.getText(), Client.getRoom());
     }
     private static byte[] loadAudioFileToByteArray(String filePath) throws IOException {
         File audioFile = new File(filePath);
@@ -280,14 +298,14 @@ public class GUI {
         String str = x.replace("null","");
         users.append(str);
     }
-    public static Message sendImage(String path) throws IOException {
+    public static Packet sendImage(String path) throws IOException {
         BufferedImage image = ImageIO.read(new File(path));
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         ImageIO.write(image, "jpg", baos);
         byte[] imageByteArray = baos.toByteArray();
 
         // Create the message with the image data
-        return new Message(imageByteArray,true,false, Client.getUsername());
+        return new Packet(imageByteArray, Packet.Type.Image, Client.getUsername(), Client.getRoom());
     }
     private static BufferedImage loadImageFromByteArray(byte[] imageData) throws IOException {
         ByteArrayInputStream bis = new ByteArrayInputStream(imageData);
