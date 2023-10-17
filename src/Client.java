@@ -128,6 +128,7 @@ public class Client {
     public static void disconnect() throws IOException, InterruptedException {
         if (connected) {
             GUI.clear();
+            room = 0;
             connected = false;
             Thread.sleep(100);
             socket.close();
