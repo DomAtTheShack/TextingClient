@@ -18,6 +18,7 @@ public class Packet implements Serializable {
     private String userSent;
     private int room;
     private byte[] image;
+    private int oldRoom;
 
 
     /**
@@ -46,10 +47,11 @@ public class Packet implements Serializable {
         image = imageByteArray;
         this.room = room;
     }
-    public Packet(int room, Type ID, String userSent){
+    public Packet(int room, Type ID, String userSent, int oldRoom){
         this.room = room;
         this.ID = ID;
         this.userSent = userSent;
+        this.oldRoom = oldRoom;
     }
     public int getRoom(){
         return room;
@@ -89,6 +91,11 @@ public class Packet implements Serializable {
     public byte[] getByteData() {
         return image;
     }
+
+    public int getOldRoom() {
+        return oldRoom;
+    }
+
     enum Type{
         Image, Audio, Message, UserRequest, RoomChange, Ping;
     }

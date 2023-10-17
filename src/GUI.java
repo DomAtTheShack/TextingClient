@@ -104,7 +104,7 @@ public class GUI {
                 if(Client.isConnected()) {
                     if(sendMessage.getText().startsWith("/room ")){
                         if(getRoom(sendMessage.getText()) != -1){
-                            Client.packet = new Packet(getRoom((sendMessage.getText())), Packet.Type.RoomChange, Client.getUsername());
+                            Client.packet = new Packet(getRoom((sendMessage.getText())), Packet.Type.RoomChange, Client.getUsername(), Client.getRoom());
                         }
                     }else {
                         Client.packet = new Packet(sendMessage.getText(), Packet.Type.Message, Client.getRoom());
