@@ -82,7 +82,6 @@ public class Client {
             while (true) {
                 while (packet != null) {
                     Packet.sendObjectAsync(out, packet);
-                    System.out.println(packet.getRoom());
                     packet = null;
                 }
                 Thread.sleep(100);
