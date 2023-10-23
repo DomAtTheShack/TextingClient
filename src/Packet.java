@@ -1,7 +1,6 @@
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
+import java.io.*;
+import java.security.DigestInputStream;
+import java.security.MessageDigest;
 import java.util.List;
 
 /**
@@ -95,6 +94,41 @@ public class Packet implements Serializable {
     public int getOldRoom() {
         return oldRoom;
     }
+
+    public static void checksum(String[] args) {
+            String className = "GUI.class"; // Replace with the path to the class file within the JAR
+
+            try {
+                Class<?> myClass = GUI.class;
+                InputStream inputStream = myClass.getClassLoader().getResourceAsStream(className);
+
+                if (inputStream != null) {
+                    DigestInputStream digestInputStream = new DigestInputStream(inputStream, MessageDigest.getInstance("SHA-256"));
+                    byte[] buffer = new byte[8192];
+                    while (digestInputStream.read(buffer) != -1) {
+                        // Read the class file and update the digest
+                    }
+                    digestInputStream.close();
+
+                    byte[] checksumBytes = digestInputStream.getMessageDigest().digest();
+
+                    // Convert the byte array to a hexadecimal string
+                    StringBuilder checksumHex = new StringBuilder();
+                    for (byte b : checksumBytes) {
+                        checksumHex.append(String.format("%02x", b));
+                    }
+
+                    System.out.println("SHA-256 Checksum of " + className + " in this JAR: " + checksumHex.toString());
+                } else {
+                    System.out.println("Class file not found in the JAR.");
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
 
     enum Type{
         Image, Audio, Message, UserRequest, RoomChange, Ping;
