@@ -48,8 +48,8 @@ public class Client {
                             } else if (receivedPacket.getID() == Packet.Type.Image && receivedPacket.getRoom() == room) {
                                 GUI.openImage(receivedPacket.getByteData(), receivedPacket.getUserSent());
                                 GUI.playSound();
-                            } else if(receivedPacket.getID() == Packet.Type.Audio && receivedPacket.getRoom() == room){
-                                AudioPlayer.playAudio(receivedPacket.getByteData());
+                            } else if(receivedPacket.getID() == Packet.Type.Video && receivedPacket.getRoom() == room){
+                                VideoToByteArray.play(packet.getByteData());
                                 GUI.playSound();
                             } else if(receivedPacket.getID() == Packet.Type.Message && receivedPacket.getRoom() == room){
                                 // Handle regular messages

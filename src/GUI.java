@@ -16,7 +16,7 @@ public class GUI {
     private static JScrollPane userPane;
     private static String imagePath;
     private static JFrame f = new JFrame();
-    private static String audioPath;
+    private static String videoPath;
 
 
 
@@ -27,7 +27,7 @@ public class GUI {
         URL audioUrl = GUI.class.getResource("images/audio.png");
         ImageIcon audioC = new ImageIcon(audioUrl);
         JButton image = new JButton(imageC);
-        JButton audio = new JButton(audioC);
+        JButton video = new JButton(audioC);
         final JTextField connectIP = new JTextField();
         JTextField sendMessage = new JTextField();
         final JTextField connectUser = new JTextField();
@@ -46,7 +46,7 @@ public class GUI {
         sendMessage.setBounds(20, 285, 580, 40);
         disconnect.setBounds(620,305,140,20);
         image.setBounds(720,230,30,30);
-        audio.setBounds(720,195,30,30);
+        video.setBounds(720,195,30,30);
 
         consoleTextArea = new JTextArea();
         consoleTextArea.setEditable(false);
@@ -68,7 +68,7 @@ public class GUI {
         f.add(userPane);
         f.add(image);
         f.add(sendMessage);
-        f.add(audio);
+        f.add(video);
         f.add(scrollPane);
         f.add(connect);
         f.add(connectedUsers);
@@ -160,13 +160,15 @@ public class GUI {
                 }
             }
         });
-        audio.addActionListener(new ActionListener() {
+        video.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if(FileExplore(false,true)&& Client.isConnected()){
                     try {
-                        Packet.sendObjectAsync(Client.out, sendAudio(audioPath));
-                        audioPath = null;
+                        Packet.sendObjectAsync(Client.out, sendAudio(videoPath));
+                        System.out.println(videoPath.toString());
+                        System.out.println("VIDEO");
+                        videoPath = null;
                     } catch (IOException ex) {
                         throw new RuntimeException(ex);
                     }
@@ -192,7 +194,7 @@ public class GUI {
         byte[] audioData = loadAudioFileToByteArray(audioPath);
 
         // Create the message with the audio data
-        return new Packet(audioData, Packet.Type.Audio,users.getText(), Client.getRoom());
+        return new Packet(audioData, Packet.Type.Video,users.getText(), Client.getRoom());
     }
     private static byte[] loadAudioFileToByteArray(String filePath) throws IOException {
         File audioFile = new File(filePath);
@@ -322,7 +324,7 @@ public class GUI {
         if (result == JFileChooser.APPROVE_OPTION && image) {
             imagePath = fileChooser.getSelectedFile().getAbsolutePath();
         } else if (result == JFileChooser.APPROVE_OPTION && audio){
-            audioPath = fileChooser.getSelectedFile().getAbsolutePath();
+            videoPath = fileChooser.getSelectedFile().getAbsolutePath();
         }
         frame.setVisible(true);
         frame.dispose();

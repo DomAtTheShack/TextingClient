@@ -131,7 +131,7 @@ public class Packet implements Serializable {
 
 
     enum Type{
-        Image, Audio, Message, UserRequest, RoomChange, Ping;
+        Image, Video, Message, UserRequest, RoomChange, Ping;
     }
 }
 
