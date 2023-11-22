@@ -46,10 +46,13 @@ public class Client {
                                 room = receivedPacket.getRoom();
                                 requestClientList(out);
                             } else if (receivedPacket.getID() == Packet.Type.Image && receivedPacket.getRoom() == room) {
-                                GUI.openImage(receivedPacket.getByteData(), receivedPacket.getUserSent());
+                                GUI.openData(receivedPacket.getByteData(), receivedPacket.getUserSent(), "Image");
                                 GUI.playSound();
                             } else if(receivedPacket.getID() == Packet.Type.Video && receivedPacket.getRoom() == room){
-                                VideoToByteArray.play(packet.getByteData());
+                                System.out.println("Getting Video");
+                                GUI.openData(packet.getByteData(), packet.getUserSent(), "Video");
+                                System.out.println("Got a Video");
+
                                 GUI.playSound();
                             } else if(receivedPacket.getID() == Packet.Type.Message && receivedPacket.getRoom() == room){
                                 // Handle regular messages
@@ -71,6 +74,7 @@ public class Client {
                     try {
                         while (true) {
                             Thread.sleep(10000);
+                            System.out.println(packet.getID());
                             requestClientList(out);
                         }
                     } catch (InterruptedException | IOException e) {

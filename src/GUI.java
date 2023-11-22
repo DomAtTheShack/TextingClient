@@ -9,13 +9,10 @@ import java.io.*;
 import java.net.URL;
 
 public class GUI {
-    private static JTextArea consoleTextArea;
-    private static JScrollPane scrollPane;
     private static final JTextField connectUser = new JTextField();
     private static JTextArea users = new JTextArea();
-    private static JScrollPane userPane;
     private static String imagePath;
-    private static JFrame f = new JFrame();
+    private static final JFrame f = new JFrame();
     private static String videoPath;
 
 
@@ -24,7 +21,7 @@ public class GUI {
         JButton connect = new JButton("Connect");
         URL imageUrl = GUI.class.getResource("images/image.png");
         ImageIcon imageC = new ImageIcon(imageUrl);
-        URL audioUrl = GUI.class.getResource("images/audio.png");
+        URL audioUrl = GUI.class.getResource("images/video.png");
         ImageIcon audioC = new ImageIcon(audioUrl);
         JButton image = new JButton(imageC);
         JButton video = new JButton(audioC);
@@ -38,17 +35,17 @@ public class GUI {
         f.setTitle("ChatterBox");
 
         connectIP.setBounds(150, 335, 200, 20);
-        connect.setBounds(620, 335, 140, 20);
+        connect.setBounds(620, 335, 120, 20);
         connectLabel.setBounds(10, 335, 140, 20);
         usernameLabel.setBounds(355, 335, 200, 20);
         connectUser.setBounds(430, 335, 170, 20);
         connectedUsers.setBounds(590, 10, 150, 20);
         sendMessage.setBounds(20, 285, 580, 40);
-        disconnect.setBounds(620,305,140,20);
+        disconnect.setBounds(620,305,120,20);
         image.setBounds(720,230,30,30);
         video.setBounds(720,195,30,30);
 
-        consoleTextArea = new JTextArea();
+        JTextArea consoleTextArea = new JTextArea();
         consoleTextArea.setEditable(false);
         users = new JTextArea();
         users.setEditable(false);
@@ -60,9 +57,9 @@ public class GUI {
         System.setErr(printStream);
 
         // Add the JTextArea to the existing JFrame
-        scrollPane = new JScrollPane(consoleTextArea);
+        JScrollPane scrollPane = new JScrollPane(consoleTextArea);
         scrollPane.setBounds(20, 10, 550, 260);
-        userPane = new JScrollPane(users);
+        JScrollPane userPane = new JScrollPane(users);
         userPane.setBounds(590, 40, 120, 230);
 
         f.add(userPane);
@@ -77,7 +74,7 @@ public class GUI {
         f.add(connectLabel);
         f.add(connectIP);
         f.add(usernameLabel);
-        f.setSize(764, 400);
+        f.setSize(770, 400);
         f.setLayout(null);
         f.setVisible(true);
         f.setResizable(false);
@@ -98,29 +95,27 @@ public class GUI {
             });
 
 
-        sendMessage.addActionListener(new ActionListener(){
-
-            public void actionPerformed(ActionEvent e){
-                if(Client.isConnected()) {
-                    if(sendMessage.getText().startsWith("/room ")){
-                        if(getRoom(sendMessage.getText()) != -1){
-                            Client.packet = new Packet(getRoom((sendMessage.getText())), Packet.Type.RoomChange, Client.getUsername(), Client.getRoom());
-                        }
-                    }else {
-                        Client.packet = new Packet(sendMessage.getText(), Packet.Type.Message, Client.getRoom());
+        sendMessage.addActionListener(e -> {
+            if(Client.isConnected()) {
+                if(sendMessage.getText().startsWith("/room ")){
+                    if(getRoom(sendMessage.getText()) != -1){
+                        Client.packet = new Packet(getRoom((sendMessage.getText())), Packet.Type.RoomChange, Client.getUsername(), Client.getRoom());
                     }
-                    sendMessage.setText("");
                 }else {
-                    System.out.println("Not Connected");
+                    Client.packet = new Packet(sendMessage.getText(), Packet.Type.Message, Client.getRoom());
                 }
-            }});
+                sendMessage.setText("");
+            }else {
+                System.out.println("Not Connected");
+            }
+        });
 
         connect.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
                 if (getIpPort(connectIP.getText())[0] == null || getIpPort(connectIP.getText())[1] == null) {
                     System.out.println("Invalid IP/Port");
-                } else if (connectUser.getText().length() > 24 || connectUser.getText().equals("") || connectUser.getText().endsWith(" ") || connectUser.getText().substring(0, 1).equals(" ")) {
+                } else if (connectUser.getText().length() > 24 || connectUser.getText().equals("") || connectUser.getText().endsWith(" ") || connectUser.getText().charAt(0) == ' ') {
                     System.out.println("Invalid Username: Check Spaces and Length");
                 } else if (!Client.isConnected()) {
                     new Thread(() -> {
@@ -148,30 +143,20 @@ public class GUI {
                 return r;
             }
         });
-        disconnect.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent actionEvent) {
-                try {
-                    Client.disconnect();
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
+        disconnect.addActionListener(actionEvent -> {
+            try {
+                Client.disconnect();
+            } catch (IOException | InterruptedException e) {
+                throw new RuntimeException(e);
             }
         });
-        video.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if(FileExplore(false,true)&& Client.isConnected()){
-                    try {
-                        Packet.sendObjectAsync(Client.out, sendAudio(videoPath));
-                        System.out.println(videoPath.toString());
-                        System.out.println("VIDEO");
-                        videoPath = null;
-                    } catch (IOException ex) {
-                        throw new RuntimeException(ex);
-                    }
+        video.addActionListener(e -> {
+            if(FileExplore(false,true) && Client.isConnected()){
+                try {
+                    Packet.sendObjectAsync(Client.out, sendAudio(videoPath));
+                    videoPath = null;
+                } catch (IOException ex) {
+                    throw new RuntimeException(ex);
                 }
             }
         });
@@ -207,10 +192,9 @@ public class GUI {
         return audioData;
     }
 
-    public static void openImage(byte[] imageData, String userSent) throws IOException {
-        final boolean[] display = {false};
-        JFrame frame = new JFrame("Display Image");
-        JLabel user = new JLabel("An Image was sent by " + userSent);
+    public static void openData(byte[] data, String userSent, String WhatIsSent) {
+        JFrame frame = new JFrame("Display " + WhatIsSent);
+        JLabel user = new JLabel("An " + WhatIsSent + " was sent by " + userSent);
         JButton yes = new JButton("Yes");
         JButton no = new JButton("No");
 
@@ -223,20 +207,6 @@ public class GUI {
         frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         frame.setResizable(false);
 
-        yes.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                display[0] = true;
-            }
-        });
-
-        no.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                display[0] = false;
-            }
-        });
-
         frame.add(user);
         frame.add(yes);
         frame.add(no);
@@ -247,37 +217,36 @@ public class GUI {
             public void actionPerformed(ActionEvent e) {
                 frame.dispose();
                 JFrame f = new JFrame();
-                f.setTitle("Image Display from Byte Array");
+                f.setTitle(WhatIsSent + " Display from Byte Array");
                 f.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
-                // Convert byte[] to ImageIcon
-                ImageIcon imageIcon = new ImageIcon(imageData);
-                Image image = imageIcon.getImage();
+                if(WhatIsSent.equals("Image")) {
+                    // Convert byte[] to ImageIcon
+                    ImageIcon imageIcon = new ImageIcon(data);
+                    Image image = imageIcon.getImage();
 
-                // Create a BufferedImage from the Image
-                BufferedImage bufferedImage = new BufferedImage(image.getWidth(null), image.getHeight(null), BufferedImage.TYPE_INT_RGB);
-                Graphics g = bufferedImage.createGraphics();
-                g.drawImage(image, 0, 0, null);
-                g.dispose();
+                    // Create a BufferedImage from the Image
+                    BufferedImage bufferedImage = new BufferedImage(image.getWidth(null), image.getHeight(null), BufferedImage.TYPE_INT_RGB);
+                    Graphics g = bufferedImage.createGraphics();
+                    g.drawImage(image, 0, 0, null);
+                    g.dispose();
 
-                // Create a JLabel to hold the image
-                JLabel label = new JLabel(new ImageIcon(bufferedImage));
+                    // Create a JLabel to hold the image
+                    JLabel label = new JLabel(new ImageIcon(bufferedImage));
 
-                // Add the label to the JFrame
-                f.getContentPane().add(label);
+                    // Add the label to the JFrame
+                    f.getContentPane().add(label);
 
-                // Set frame properties
-                f.pack(); // Adjusts the frame size to fit the image
-                f.setLocationRelativeTo(null); // Centers the frame on the screen
-                f.setVisible(true);
+                    // Set frame properties
+                    f.pack(); // Adjusts the frame size to fit the image
+                    f.setLocationRelativeTo(null); // Centers the frame on the screen
+                    f.setVisible(true);
+                }else {
+                    VideoToByteArray.play(data);
+                }
             }
         });
-        no.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                frame.dispose();
-            }
-        });
+        no.addActionListener(e -> frame.dispose());
     }
 
     private static class CustomOutputStream extends OutputStream {
@@ -309,10 +278,7 @@ public class GUI {
         // Create the message with the image data
         return new Packet(imageByteArray, Packet.Type.Image, Client.getUsername(), Client.getRoom());
     }
-    private static BufferedImage loadImageFromByteArray(byte[] imageData) throws IOException {
-        ByteArrayInputStream bis = new ByteArrayInputStream(imageData);
-        return ImageIO.read(bis);
-    }
+
     private static boolean FileExplore(boolean image, boolean audio){
         JFrame frame = new JFrame("File Explorer Example");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
