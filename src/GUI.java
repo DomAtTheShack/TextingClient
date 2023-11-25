@@ -7,9 +7,11 @@ import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 
 public class GUI {
-    private static final JTextField connectUser = new JTextField();
     private static JTextArea users = new JTextArea();
     private static String imagePath;
     private static final JFrame f = new JFrame();
@@ -20,8 +22,10 @@ public class GUI {
     public static void main(String[] args) {
         JButton connect = new JButton("Connect");
         URL imageUrl = GUI.class.getResource("images/image.png");
+        assert imageUrl != null;
         ImageIcon imageC = new ImageIcon(imageUrl);
         URL audioUrl = GUI.class.getResource("images/video.png");
+        assert audioUrl != null;
         ImageIcon audioC = new ImageIcon(audioUrl);
         JButton image = new JButton(imageC);
         JButton video = new JButton(audioC);
@@ -80,19 +84,16 @@ public class GUI {
         f.setResizable(false);
         f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        image.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if(FileExplore(true,false)&& Client.isConnected()){
-                    try {
-                        Packet.sendObjectAsync(Client.out, sendImage(imagePath));
-                        imagePath = null;
-                    } catch (IOException ex) {
-                        throw new RuntimeException(ex);
-                    }
+        image.addActionListener(e -> {
+            if(FileExplore(true,false)&& Client.isConnected()){
+                try {
+                    Packet.sendObjectAsync(Client.out, sendImage(imagePath));
+                    imagePath = null;
+                } catch (IOException ex) {
+                    throw new RuntimeException(ex);
                 }
             }
-            });
+        });
 
 
         sendMessage.addActionListener(e -> {
@@ -153,7 +154,7 @@ public class GUI {
         video.addActionListener(e -> {
             if(FileExplore(false,true) && Client.isConnected()){
                 try {
-                    Packet.sendObjectAsync(Client.out, sendAudio(videoPath));
+                    Packet.sendObjectAsync(Client.out, sendData(videoPath));
                     videoPath = null;
                 } catch (IOException ex) {
                     throw new RuntimeException(ex);
@@ -175,21 +176,31 @@ public class GUI {
         return -1;
     }
 
-    private static Packet sendAudio(String audioPath) throws IOException {
-        byte[] audioData = loadAudioFileToByteArray(audioPath);
+    private static Packet sendData(String dataPath) throws IOException {
+        byte[] sendData = loadAudioFileToByteArray(dataPath);
 
         // Create the message with the audio data
-        return new Packet(audioData, Packet.Type.Video,users.getText(), Client.getRoom());
+        return new Packet(sendData, Packet.Type.Video,users.getText(), Client.getRoom());
     }
-    private static byte[] loadAudioFileToByteArray(String filePath) throws IOException {
+    private static byte[] loadAudioFileToByteArray(String filePath) {
         File audioFile = new File(filePath);
-        byte[] audioData = new byte[(int) audioFile.length()];
 
-        try (FileInputStream fileInputStream = new FileInputStream(audioFile)) {
-            fileInputStream.read(audioData);
+        try (FileInputStream fis = new FileInputStream(audioFile);
+             ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
+
+            byte[] buffer = new byte[1024];
+            int bytesRead;
+
+            while ((bytesRead = fis.read(buffer)) != -1) {
+                bos.write(buffer, 0, bytesRead);
+            }
+
+            return bos.toByteArray();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null; // Handle the exception according to your needs
         }
-
-        return audioData;
     }
 
     public static void openData(byte[] data, String userSent, String WhatIsSent) {
@@ -212,41 +223,62 @@ public class GUI {
         frame.add(no);
         frame.setVisible(true);
 
-        yes.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                frame.dispose();
-                JFrame f = new JFrame();
-                f.setTitle(WhatIsSent + " Display from Byte Array");
-                f.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        yes.addActionListener(e -> {
+            frame.dispose();
+            JFrame f = new JFrame();
+            f.setTitle(WhatIsSent + " Display from Byte Array");
+            f.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
-                if(WhatIsSent.equals("Image")) {
-                    // Convert byte[] to ImageIcon
-                    ImageIcon imageIcon = new ImageIcon(data);
-                    Image image = imageIcon.getImage();
+            if(WhatIsSent.equals("Image")) {
+                // Convert byte[] to ImageIcon
+                ImageIcon imageIcon = new ImageIcon(data);
+                Image image = imageIcon.getImage();
 
-                    // Create a BufferedImage from the Image
-                    BufferedImage bufferedImage = new BufferedImage(image.getWidth(null), image.getHeight(null), BufferedImage.TYPE_INT_RGB);
-                    Graphics g = bufferedImage.createGraphics();
-                    g.drawImage(image, 0, 0, null);
-                    g.dispose();
+                // Create a BufferedImage from the Image
+                BufferedImage bufferedImage = new BufferedImage(image.getWidth(null), image.getHeight(null), BufferedImage.TYPE_INT_RGB);
+                Graphics g = bufferedImage.createGraphics();
+                g.drawImage(image, 0, 0, null);
+                g.dispose();
 
-                    // Create a JLabel to hold the image
-                    JLabel label = new JLabel(new ImageIcon(bufferedImage));
+                // Create a JLabel to hold the image
+                JLabel label = new JLabel(new ImageIcon(bufferedImage));
 
-                    // Add the label to the JFrame
-                    f.getContentPane().add(label);
+                // Add the label to the JFrame
+                f.getContentPane().add(label);
 
-                    // Set frame properties
-                    f.pack(); // Adjusts the frame size to fit the image
-                    f.setLocationRelativeTo(null); // Centers the frame on the screen
-                    f.setVisible(true);
-                }else {
-                    VideoToByteArray.play(data);
-                }
+                // Set frame properties
+                f.pack(); // Adjusts the frame size to fit the image
+                f.setLocationRelativeTo(null); // Centers the frame on the screen
+                f.setVisible(true);
+            }else {
+                new Thread(() -> playVideo(data)).start();
             }
         });
         no.addActionListener(e -> frame.dispose());
+    }
+
+    private static void playVideo(byte[] video) {
+        // Assuming the JAR file is in the src directory
+        String jarFileName = "vlcj-player.jar";
+
+        try {
+            Path tempFile = Files.createTempFile("tempVideo", ".mp4");
+
+            // Write the byte array to the temporary file
+            Files.write(tempFile, video, StandardOpenOption.WRITE);
+
+            // Set the working directory to the src directory
+            ProcessBuilder processBuilder = new ProcessBuilder("java", "-jar", jarFileName, tempFile.getFileName().toString());
+            processBuilder.directory(new java.io.File("src"));
+
+            // Redirect standard output to capture the output
+            processBuilder.redirectErrorStream(true);
+
+            // Start the process
+            Process process = processBuilder.start();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private static class CustomOutputStream extends OutputStream {
@@ -294,10 +326,7 @@ public class GUI {
         }
         frame.setVisible(true);
         frame.dispose();
-        if(imagePath != null && Client.isConnected()) {
-            return true;
-        }
-        return false;
+        return (imagePath != null || videoPath != null) && Client.isConnected();
     }
     public static void playSound() {
         if(!f.isFocused()) {

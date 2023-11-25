@@ -49,10 +49,7 @@ public class Client {
                                 GUI.openData(receivedPacket.getByteData(), receivedPacket.getUserSent(), "Image");
                                 GUI.playSound();
                             } else if(receivedPacket.getID() == Packet.Type.Video && receivedPacket.getRoom() == room){
-                                System.out.println("Getting Video");
-                                GUI.openData(packet.getByteData(), packet.getUserSent(), "Video");
-                                System.out.println("Got a Video");
-
+                                GUI.openData(receivedPacket.getByteData(), receivedPacket.getUserSent(), "Video");
                                 GUI.playSound();
                             } else if(receivedPacket.getID() == Packet.Type.Message && receivedPacket.getRoom() == room){
                                 // Handle regular messages
@@ -74,7 +71,6 @@ public class Client {
                     try {
                         while (true) {
                             Thread.sleep(10000);
-                            System.out.println(packet.getID());
                             requestClientList(out);
                         }
                     } catch (InterruptedException | IOException e) {
@@ -93,7 +89,7 @@ public class Client {
         } catch (IOException e) {
             connected = false;
             e.printStackTrace();
-            if (e.getMessage().contains("Connection Reset") || e.getMessage().contains("Connection refused: connect")) {
+            if (e.getMessage().contains("Connection Reset") || e.getMessage().contains("Connection refused: connect") || e.getMessage().contains("UnknownHostException:")) {
                 System.out.println("Server Not Available");
             }
         }
@@ -120,7 +116,7 @@ public class Client {
                     clients[0] += (x) + ("\n");
                 }
                 try {
-                    GUI.addText("Room #" + String.valueOf(room) + "\n");
+                    GUI.addText("Room #" + room + "\n");
                     GUI.addText(clients[0]);
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
