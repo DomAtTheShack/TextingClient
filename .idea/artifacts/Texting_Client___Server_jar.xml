@@ -8,6 +8,7 @@
       <element id="extracted-dir" path="$PROJECT_DIR$/javafx.base.jar" path-in-jar="/" />
       <element id="extracted-dir" path="$PROJECT_DIR$/javafx.controls.jar" path-in-jar="/" />
       <element id="extracted-dir" path="$PROJECT_DIR$/javafx.fxml.jar" path-in-jar="/" />
+      <element id="file-copy" path="$PROJECT_DIR$/src/vlcj-player.jar" />
     </root>
   </artifact>
 </component>

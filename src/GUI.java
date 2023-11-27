@@ -6,6 +6,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.*;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -251,37 +252,71 @@ public class GUI {
                 f.setLocationRelativeTo(null); // Centers the frame on the screen
                 f.setVisible(true);
             }else {
-                new Thread(() -> playVideo(data)).start();
+                playVideo(data);
             }
         });
         no.addActionListener(e -> frame.dispose());
     }
 
     private static void playVideo(byte[] video) {
-        // Assuming the JAR file is in the src directory
-        String jarFileName = "vlcj-player.jar";
-
         try {
-            Path tempFile = Files.createTempFile("tempVideo", ".mp4");
-
-            // Write the byte array to the temporary file
+            // Create a temporary file
+            Path tempFile = Files.createTempFile("chatterVid", ".mp4");
             Files.write(tempFile, video, StandardOpenOption.WRITE);
 
-            // Set the working directory to the src directory
-            ProcessBuilder processBuilder = new ProcessBuilder("java", "-jar", jarFileName, tempFile.getFileName().toString());
-            processBuilder.directory(new java.io.File("src"));
+            // Write the byte array (video data) to the temporary file
+            // Assuming 'video' is a byte array containing your video data
+            // Specify the path to the 'lib' directory
+            String libDirPath = "lib";
 
-            // Redirect standard output to capture the output
-            processBuilder.redirectErrorStream(true);
+            // Get a reference to the 'lib' directory
+            File libDir = new File(libDirPath);
 
-            // Start the process
-            Process process = processBuilder.start();
+            // Check if the 'lib' directory exists
+            if (libDir.exists() && libDir.isDirectory()) {
+                // List all files in the 'lib' directory
+                File[] jarFiles = libDir.listFiles((dir, name) -> name.endsWith(".jar"));
+
+                if (jarFiles != null && jarFiles.length > 0) {
+                    // Iterate through the JAR files and execute each one
+                    for (File jarFile : jarFiles) {
+                        try {
+                            executeJar(jarFile, tempFile.toString());
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                } else {
+                    System.out.println("No JAR files found in the 'lib' directory.");
+                }
+            } else {
+                System.out.println("'lib' directory not found.");
+            }
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
     }
+    private static void executeJar(File jarFile, String Video) throws IOException {
+        // Get the absolute path of the JAR file
+        String jarFilePath = jarFile.getAbsolutePath();
 
-    private static class CustomOutputStream extends OutputStream {
+        // Build the command to execute the JAR file
+        String command = "java -jar " + jarFilePath + " " + Video;
+
+        // Use ProcessBuilder to execute the command
+        ProcessBuilder processBuilder = new ProcessBuilder(command.split(" "));
+
+        // Set the working directory to the directory containing the JAR file
+        processBuilder.directory(jarFile.getParentFile());
+
+        // Redirect standard output to capture the output
+        processBuilder.redirectErrorStream(true);
+
+        // Start the process
+        Process process = processBuilder.start();
+    }
+
+        private static class CustomOutputStream extends OutputStream {
         private final JTextArea textArea;
 
         public CustomOutputStream(JTextArea textArea) {
