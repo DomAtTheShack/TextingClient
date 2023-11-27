@@ -203,6 +203,19 @@ public class GUI {
             return null; // Handle the exception according to your needs
         }
     }
+    private static class CustomOutputStream extends OutputStream {
+        private final JTextArea textArea;
+
+        public CustomOutputStream(JTextArea textArea) {
+            this.textArea = textArea;
+        }
+
+        @Override
+        public void write(int b) {
+            textArea.append(String.valueOf((char) b));
+            textArea.setCaretPosition(textArea.getDocument().getLength());
+        }
+    }
 
     public static void openData(byte[] data, String userSent, String WhatIsSent) {
         JFrame frame = new JFrame("Display " + WhatIsSent);
@@ -252,81 +265,26 @@ public class GUI {
                 f.setLocationRelativeTo(null); // Centers the frame on the screen
                 f.setVisible(true);
             }else {
-                playVideo(data);
+                try {
+                    playVideo(data);
+                } catch (IOException ex) {
+                    throw new RuntimeException(ex);
+                }
             }
         });
         no.addActionListener(e -> frame.dispose());
     }
 
-    private static void playVideo(byte[] video) {
-        try {
+    private static void playVideo(byte[] video) throws IOException {
             // Create a temporary file
             Path tempFile = Files.createTempFile("chatterVid", ".mp4");
             Files.write(tempFile, video, StandardOpenOption.WRITE);
+        File videoFile = new File(tempFile.toString());
 
-            // Write the byte array (video data) to the temporary file
-            // Assuming 'video' is a byte array containing your video data
-            // Specify the path to the 'lib' directory
-            String libDirPath = "lib";
+        if (videoFile.exists()) {
+            Desktop desktop = Desktop.getDesktop();
+            desktop.open(videoFile);
 
-            // Get a reference to the 'lib' directory
-            File libDir = new File(libDirPath);
-
-            // Check if the 'lib' directory exists
-            if (libDir.exists() && libDir.isDirectory()) {
-                // List all files in the 'lib' directory
-                File[] jarFiles = libDir.listFiles((dir, name) -> name.endsWith(".jar"));
-
-                if (jarFiles != null && jarFiles.length > 0) {
-                    // Iterate through the JAR files and execute each one
-                    for (File jarFile : jarFiles) {
-                        try {
-                            executeJar(jarFile, tempFile.toString());
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                } else {
-                    System.out.println("No JAR files found in the 'lib' directory.");
-                }
-            } else {
-                System.out.println("'lib' directory not found.");
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-    private static void executeJar(File jarFile, String Video) throws IOException {
-        // Get the absolute path of the JAR file
-        String jarFilePath = jarFile.getAbsolutePath();
-
-        // Build the command to execute the JAR file
-        String command = "java -jar " + jarFilePath + " " + Video;
-
-        // Use ProcessBuilder to execute the command
-        ProcessBuilder processBuilder = new ProcessBuilder(command.split(" "));
-
-        // Set the working directory to the directory containing the JAR file
-        processBuilder.directory(jarFile.getParentFile());
-
-        // Redirect standard output to capture the output
-        processBuilder.redirectErrorStream(true);
-
-        // Start the process
-        Process process = processBuilder.start();
-    }
-
-        private static class CustomOutputStream extends OutputStream {
-        private final JTextArea textArea;
-
-        public CustomOutputStream(JTextArea textArea) {
-            this.textArea = textArea;
-        }
-
-        @Override
-        public void write(int b) {
-            textArea.append(String.valueOf((char) b));
-            textArea.setCaretPosition(textArea.getDocument().getLength());
         }
     }
     public static void clear(){
