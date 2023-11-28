@@ -1,92 +1,92 @@
+import javafx.application.Application;
+import javafx.application.Platform;
+import javafx.geometry.Insets;
+import javafx.scene.Scene;
+import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.StackPane;
+import javafx.stage.FileChooser;
+import javafx.stage.Stage;
+
 import javax.imageio.ImageIO;
-import javax.sound.sampled.*;
-import javax.swing.*;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
+import javax.sound.sampled.FloatControl;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.*;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.Optional;
 
-public class GUI {
-    private static JTextArea users = new JTextArea();
+public class GUI extends Application {
+    private static TextArea usersTextArea;
     private static String imagePath;
-    private static final JFrame f = new JFrame();
     private static String videoPath;
 
-
-
     public static void main(String[] args) {
-        JButton connect = new JButton("Connect");
-        URL imageUrl = GUI.class.getResource("images/image.png");
-        assert imageUrl != null;
-        ImageIcon imageC = new ImageIcon(imageUrl);
-        URL audioUrl = GUI.class.getResource("images/video.png");
-        assert audioUrl != null;
-        ImageIcon audioC = new ImageIcon(audioUrl);
-        JButton image = new JButton(imageC);
-        JButton video = new JButton(audioC);
-        final JTextField connectIP = new JTextField();
-        JTextField sendMessage = new JTextField();
-        final JTextField connectUser = new JTextField();
-        JButton disconnect = new JButton("Disconnect");
-        JLabel connectLabel = new JLabel("Connection IP:Port");
-        JLabel usernameLabel = new JLabel("Username");
-        JLabel connectedUsers = new JLabel("People Connected");
-        f.setTitle("ChatterBox");
+        launch(args);
+    }
 
-        connectIP.setBounds(150, 335, 200, 20);
-        connect.setBounds(620, 335, 120, 20);
-        connectLabel.setBounds(10, 335, 140, 20);
-        usernameLabel.setBounds(355, 335, 200, 20);
-        connectUser.setBounds(430, 335, 170, 20);
-        connectedUsers.setBounds(590, 10, 150, 20);
-        sendMessage.setBounds(20, 285, 580, 40);
-        disconnect.setBounds(620,305,120,20);
-        image.setBounds(720,230,30,30);
-        video.setBounds(720,195,30,30);
+    @Override
+    public void start(Stage primaryStage) {
+        primaryStage.setTitle("ChatterBox");
 
-        JTextArea consoleTextArea = new JTextArea();
+        GridPane grid = new GridPane();
+        grid.setPadding(new Insets(10, 10, 10, 10));
+        grid.setVgap(8);
+        grid.setHgap(10);
+
+        // Create UI components
+        Button connect = new Button("Connect");
+        TextField connectIP = new TextField();
+        TextField connectUser = new TextField();
+        Button disconnect = new Button("Disconnect");
+        Label connectLabel = new Label("Connection IP:Port");
+        Label usernameLabel = new Label("Username");
+        Label connectedUsers = new Label("People Connected");
+        TextField sendMessage = new TextField();
+        Button image = new Button("Image", new ImageView(new Image(getClass().getResourceAsStream("images/image.png"))));
+        Button video = new Button("Video", new ImageView(new Image(getClass().getResourceAsStream("images/video.png"))));
+
+        TextArea consoleTextArea = new TextArea();
         consoleTextArea.setEditable(false);
-        users = new JTextArea();
-        users.setEditable(false);
+        ScrollPane consoleScrollPane = new ScrollPane(consoleTextArea); // Wrap the TextArea in a ScrollPane
+        consoleScrollPane.setFitToWidth(true);
+        consoleScrollPane.setFitToHeight(true);
+        usersTextArea = new TextArea();
+        usersTextArea.setEditable(false);
 
-
-        // Redirect System.out and System.err to the JTextArea
+        // Redirect System.out and System.err to the TextArea
         PrintStream printStream = new PrintStream(new CustomOutputStream(consoleTextArea));
         System.setOut(printStream);
         System.setErr(printStream);
 
-        // Add the JTextArea to the existing JFrame
-        JScrollPane scrollPane = new JScrollPane(consoleTextArea);
-        scrollPane.setBounds(20, 10, 550, 260);
-        JScrollPane userPane = new JScrollPane(users);
-        userPane.setBounds(590, 40, 120, 230);
-
-        f.add(userPane);
-        f.add(image);
-        f.add(sendMessage);
-        f.add(video);
-        f.add(scrollPane);
-        f.add(connect);
-        f.add(connectedUsers);
-        f.add(disconnect);
-        f.add(connectUser);
-        f.add(connectLabel);
-        f.add(connectIP);
-        f.add(usernameLabel);
-        f.setSize(770, 400);
-        f.setLayout(null);
-        f.setVisible(true);
-        f.setResizable(false);
-        f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
-        image.addActionListener(e -> {
-            if(FileExplore(true,false)&& Client.isConnected()){
+        // Add UI components to the grid
+        grid.add(connectLabel, 0, 0);
+        grid.add(connectIP, 1, 0);
+        grid.add(connect, 2, 0);
+        grid.add(usernameLabel, 3, 0);
+        grid.add(connectUser, 4, 0);
+        grid.add(connectedUsers, 5, 0);
+        grid.add(sendMessage, 0, 1, 4, 1); // span 4 columns
+        grid.add(disconnect, 4, 1);
+        grid.add(image, 5, 1);
+        grid.add(video, 6, 1);
+        grid.add(consoleScrollPane, 0, 2, 7, 1); // span 7 columns for the console
+        grid.add(usersTextArea, 5, 3, 2, 1); // span 2 columns for the user list
+        // Set event handlers
+        image.setOnAction(e -> {
+            if (fileExplore(true, false) && Client.isConnected()) {
                 try {
                     Packet.sendObjectAsync(Client.out, sendImage(imagePath));
                     imagePath = null;
@@ -96,64 +96,49 @@ public class GUI {
             }
         });
 
-
-        sendMessage.addActionListener(e -> {
-            if(Client.isConnected()) {
-                if(sendMessage.getText().startsWith("/room ")){
-                    if(getRoom(sendMessage.getText()) != -1){
+        sendMessage.setOnAction(e -> {
+            if (Client.isConnected()) {
+                if (sendMessage.getText().startsWith("/room ")) {
+                    if (getRoom(sendMessage.getText()) != -1) {
                         Client.packet = new Packet(getRoom((sendMessage.getText())), Packet.Type.RoomChange, Client.getUsername(), Client.getRoom());
                     }
-                }else {
+                } else {
                     Client.packet = new Packet(sendMessage.getText(), Packet.Type.Message, Client.getRoom());
                 }
                 sendMessage.setText("");
-            }else {
+            } else {
                 System.out.println("Not Connected");
             }
         });
 
-        connect.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent actionEvent) {
-                if (getIpPort(connectIP.getText())[0] == null || getIpPort(connectIP.getText())[1] == null) {
-                    System.out.println("Invalid IP/Port");
-                } else if (connectUser.getText().length() > 24 || connectUser.getText().equals("") || connectUser.getText().endsWith(" ") || connectUser.getText().charAt(0) == ' ') {
-                    System.out.println("Invalid Username: Check Spaces and Length");
-                } else if (!Client.isConnected()) {
-                    new Thread(() -> {
-                        try {
-                            Client.connect(getIpPort(connectIP.getText()), connectUser.getText());
-                        } catch (InterruptedException e) {
-                            throw new RuntimeException(e);
-                        }
-                    }).start();
-                } else {
-                    System.out.println("Already connected!");
-                }
-            }
-
-            private String[] getIpPort(String text) {
-                int colan;
-                String[] r = new String[2];
-                for (int i = 0; i < text.length() - 1; i++) {
-                    if (text.charAt(i) == ':') {
-                        colan = i + 1;
-                        r[0] = text.substring(0, colan - 1);
-                        r[1] = text.substring(colan);
+        connect.setOnAction(actionEvent -> {
+            if (getIpPort(connectIP.getText())[0] == null || getIpPort(connectIP.getText())[1] == null) {
+                System.out.println("Invalid IP/Port");
+            } else if (connectUser.getText().length() > 24 || connectUser.getText().equals("") || connectUser.getText().endsWith(" ") || connectUser.getText().charAt(0) == ' ') {
+                System.out.println("Invalid Username: Check Spaces and Length");
+            } else if (!Client.isConnected()) {
+                new Thread(() -> {
+                    try {
+                        Client.connect(getIpPort(connectIP.getText()), connectUser.getText());
+                    } catch (InterruptedException ex) {
+                        throw new RuntimeException(ex);
                     }
-                }
-                return r;
+                }).start();
+            } else {
+                System.out.println("Already connected!");
             }
         });
-        disconnect.addActionListener(actionEvent -> {
+
+        disconnect.setOnAction(actionEvent -> {
             try {
                 Client.disconnect();
             } catch (IOException | InterruptedException e) {
                 throw new RuntimeException(e);
             }
         });
-        video.addActionListener(e -> {
-            if(FileExplore(false,true) && Client.isConnected()){
+
+        video.setOnAction(e -> {
+            if (fileExplore(false, true) && Client.isConnected()) {
                 try {
                     Packet.sendObjectAsync(Client.out, sendData(videoPath));
                     videoPath = null;
@@ -163,14 +148,49 @@ public class GUI {
             }
         });
 
+        // Create a scene and set it on the stage
+        Scene scene = new Scene(grid, 900, 500);
+        primaryStage.setScene(scene);
+
+        // Show the stage
+        primaryStage.show();
+    }
+
+    // Other methods (sendImage, sendData, getRoom, etc.) go here
+    private String[] getIpPort(String text) {
+        int colan;
+        String[] r = new String[2];
+        for (int i = 0; i < text.length() - 1; i++) {
+            if (text.charAt(i) == ':') {
+                colan = i + 1;
+                r[0] = text.substring(0, colan - 1);
+                r[1] = text.substring(colan);
+            }
+        }
+        return r;
+    }
+    private boolean fileExplore(boolean image, boolean video) {
+        FileChooser fileChooser = new FileChooser();
+        File selectedFile;
+        if (image) {
+            fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Image Files", "*.png", "*.jpg", "*.gif"));
+            selectedFile = fileChooser.showOpenDialog(null);
+            imagePath = selectedFile != null ? selectedFile.getAbsolutePath() : null;
+        } else if (video) {
+            fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Video Files", "*.mp4", "*.avi", "*.mkv"));
+            selectedFile = fileChooser.showOpenDialog(null);
+            videoPath = selectedFile != null ? selectedFile.getAbsolutePath() : null;
+        }
+
+        return (imagePath != null || videoPath != null) && Client.isConnected();
     }
 
     private static int getRoom(String room) {
         int index = room.indexOf("/room ");
-        if(index != -1){
+        if (index != -1) {
             try {
                 return Integer.parseInt(room.substring(index + "/room ".length()));
-            }catch (NumberFormatException e){
+            } catch (NumberFormatException e) {
                 return -1;
             }
         }
@@ -178,15 +198,16 @@ public class GUI {
     }
 
     private static Packet sendData(String dataPath) throws IOException {
-        byte[] sendData = loadAudioFileToByteArray(dataPath);
+        byte[] sendData = loadFileToByteArray(dataPath);
 
-        // Create the message with the audio data
-        return new Packet(sendData, Packet.Type.Video,users.getText(), Client.getRoom());
+        // Create the message with the data
+        return new Packet(sendData, Packet.Type.Video, usersTextArea.getText(), Client.getRoom());
     }
-    private static byte[] loadAudioFileToByteArray(String filePath) {
-        File audioFile = new File(filePath);
 
-        try (FileInputStream fis = new FileInputStream(audioFile);
+    private static byte[] loadFileToByteArray(String filePath) {
+        File file = new File(filePath);
+
+        try (FileInputStream fis = new FileInputStream(file);
              ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
 
             byte[] buffer = new byte[1024];
@@ -203,97 +224,111 @@ public class GUI {
             return null; // Handle the exception according to your needs
         }
     }
-    private static class CustomOutputStream extends OutputStream {
-        private final JTextArea textArea;
 
-        public CustomOutputStream(JTextArea textArea) {
+    private class CustomOutputStream extends OutputStream {
+        private final TextArea textArea;
+
+        public CustomOutputStream(TextArea textArea) {
             this.textArea = textArea;
         }
 
         @Override
         public void write(int b) {
-            textArea.append(String.valueOf((char) b));
-            textArea.setCaretPosition(textArea.getDocument().getLength());
+            textArea.appendText(String.valueOf((char) b));
+            textArea.positionCaret(textArea.getLength());
         }
     }
 
     public static void openData(byte[] data, String userSent, String WhatIsSent) {
-        JFrame frame = new JFrame("Display " + WhatIsSent);
-        JLabel user = new JLabel("An " + WhatIsSent + " was sent by " + userSent);
-        JButton yes = new JButton("Yes");
-        JButton no = new JButton("No");
+        Stage stage = new Stage();
+        stage.setTitle("Display " + WhatIsSent);
+        Label userLabel = new Label("A " + WhatIsSent + " was sent by " + userSent);
+        Button yesButton = new Button("Yes");
+        Button noButton = new Button("No");
 
-        user.setBounds(90, 20, 300, 40);
-        yes.setBounds(100, 100, 80, 30);
-        no.setBounds(200, 100, 80, 30);
+        userLabel.setLayoutX(90);
+        userLabel.setLayoutY(20);
+        yesButton.setLayoutX(100);
+        yesButton.setLayoutY(100);
+        noButton.setLayoutX(200);
+        noButton.setLayoutY(100);
 
-        frame.setLayout(null);  // Use null layout for manual positioning
-        frame.setSize(400, 200);
-        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        frame.setResizable(false);
+        StackPane stackPane = new StackPane();
 
-        frame.add(user);
-        frame.add(yes);
-        frame.add(no);
-        frame.setVisible(true);
+        yesButton.setOnAction(e -> {
+            stage.close();
+            Stage displayStage = new Stage();
+            displayStage.setTitle(WhatIsSent + " Display from Byte Array");
 
-        yes.addActionListener(e -> {
-            frame.dispose();
-            JFrame f = new JFrame();
-            f.setTitle(WhatIsSent + " Display from Byte Array");
-            f.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+            if (WhatIsSent.equals("Image")) {
+                // Convert byte[] to Image
+                Image image = convertToImage(data);
 
-            if(WhatIsSent.equals("Image")) {
-                // Convert byte[] to ImageIcon
-                ImageIcon imageIcon = new ImageIcon(data);
-                Image image = imageIcon.getImage();
+                // Create an ImageView to display the image
+                ImageView imageView = new ImageView(image);
 
-                // Create a BufferedImage from the Image
-                BufferedImage bufferedImage = new BufferedImage(image.getWidth(null), image.getHeight(null), BufferedImage.TYPE_INT_RGB);
-                Graphics g = bufferedImage.createGraphics();
-                g.drawImage(image, 0, 0, null);
-                g.dispose();
-
-                // Create a JLabel to hold the image
-                JLabel label = new JLabel(new ImageIcon(bufferedImage));
-
-                // Add the label to the JFrame
-                f.getContentPane().add(label);
-
-                // Set frame properties
-                f.pack(); // Adjusts the frame size to fit the image
-                f.setLocationRelativeTo(null); // Centers the frame on the screen
-                f.setVisible(true);
-            }else {
+                // Add the ImageView to the StackPane
+                stackPane.getChildren().add(imageView);
+            } else {
                 try {
+                    // Play video
                     playVideo(data);
                 } catch (IOException ex) {
                     throw new RuntimeException(ex);
                 }
             }
+
+            // Create a Scene with the StackPane
+            Scene scene = new Scene(stackPane, 800, 600);
+
+            // Set the Scene on the Stage
+            displayStage.setScene(scene);
+
+            // Show the Stage
+            displayStage.show();
         });
-        no.addActionListener(e -> frame.dispose());
+
+        noButton.setOnAction(e -> stage.close());
+
+        stackPane.getChildren().addAll(userLabel, yesButton, noButton);
+
+        // Create a Scene and set it on the Stage
+        Scene scene = new Scene(stackPane, 400, 200);
+        stage.setScene(scene);
+
+        // Show the Stage
+        stage.showAndWait();
+    }
+
+    private static Image convertToImage(byte[] data) {
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(data);
+        return new Image(inputStream);
     }
 
     private static void playVideo(byte[] video) throws IOException {
-            // Create a temporary file
-            Path tempFile = Files.createTempFile("chatterVid", ".mp4");
-            Files.write(tempFile, video, StandardOpenOption.WRITE);
+        // Create a temporary file
+        Path tempFile = Files.createTempFile("chatterVid", ".mp4");
+        Files.write(tempFile, video, StandardOpenOption.WRITE);
         File videoFile = new File(tempFile.toString());
 
         if (videoFile.exists()) {
             Desktop desktop = Desktop.getDesktop();
             desktop.open(videoFile);
-
         }
     }
-    public static void clear(){
-        users.setText("");
+
+    public static void clear() {
+        usersTextArea.setText("");
     }
-    public static void addText(String x) throws InterruptedException {
-        String str = x.replace("null","");
-        users.append(str);
+
+    public static void addText(String x) {
+        String str = x.replace("null", "");
+
+        Platform.runLater(() -> {
+            usersTextArea.appendText(str);
+        });
     }
+
     public static Packet sendImage(String path) throws IOException {
         BufferedImage image = ImageIO.read(new File(path));
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -303,32 +338,15 @@ public class GUI {
         // Create the message with the image data
         return new Packet(imageByteArray, Packet.Type.Image, Client.getUsername(), Client.getRoom());
     }
-
-    private static boolean FileExplore(boolean image, boolean audio){
-        JFrame frame = new JFrame("File Explorer Example");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(400, 300);
-        JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setDialogTitle("Open");
-        fileChooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
-        int result = fileChooser.showOpenDialog(frame);
-        if (result == JFileChooser.APPROVE_OPTION && image) {
-            imagePath = fileChooser.getSelectedFile().getAbsolutePath();
-        } else if (result == JFileChooser.APPROVE_OPTION && audio){
-            videoPath = fileChooser.getSelectedFile().getAbsolutePath();
-        }
-        frame.setVisible(true);
-        frame.dispose();
-        return (imagePath != null || videoPath != null) && Client.isConnected();
-    }
     public static void playSound() {
-        if(!f.isFocused()) {
+      /*  if(!f.isFocused()) {
             java.awt.Toolkit toolkit = java.awt.Toolkit.getDefaultToolkit();
             toolkit.beep();  // Play a beep sound
             new Thread(GUI::playWav).start();
             f.toFront();  // Bring the frame to the front
             toolkit.beep();  // Play a beep sound
-        }
+        }*/
+        playWav();
     }
     public static void playWav() {
         try

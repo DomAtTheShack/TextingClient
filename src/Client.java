@@ -115,12 +115,8 @@ public class Client {
                 for (String x : currentClients) {
                     clients[0] += (x) + ("\n");
                 }
-                try {
-                    GUI.addText("Room #" + room + "\n");
-                    GUI.addText(clients[0]);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
+                GUI.addText("Room #" + room + "\n");
+                GUI.addText(clients[0]);
             }).start();
         }
     }
