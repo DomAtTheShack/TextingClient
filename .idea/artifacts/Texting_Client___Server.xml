@@ -1,0 +1,10 @@
+<component name="ArtifactManager">
+  <artifact type="javafx" name="Texting Client - Server">
+    <output-path>$PROJECT_DIR$/out/artifacts/Texting_Client___Server</output-path>
+    <root id="root">
+      <element id="archive" name="Texting_Client___Server.jar">
+        <element id="module-output" name="Texting Client - Server" />
+      </element>
+    </root>
+  </artifact>
+</component>

@@ -11,6 +11,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
@@ -43,8 +44,8 @@ public class GUI extends Application {
 
         GridPane grid = new GridPane();
         grid.setPadding(new Insets(10, 10, 10, 10));
-        grid.setVgap(8);
-        grid.setHgap(10);
+        grid.setVgap(12);
+        grid.setHgap(8);
 
         // Create UI components
         Button connect = new Button("Connect");
@@ -53,8 +54,10 @@ public class GUI extends Application {
         Button disconnect = new Button("Disconnect");
         Label connectLabel = new Label("Connection IP:Port");
         Label usernameLabel = new Label("Username");
-        Label connectedUsers = new Label("People Connected");
+        Label connectedUsersLabel = new Label("People Connected");
+        Label SendMessageLabel = new Label("Message Here: ");
         TextField sendMessage = new TextField();
+        HBox Spacer = new HBox(2);
         Button image = new Button("Image", new ImageView(new Image(getClass().getResourceAsStream("images/image.png"))));
         Button video = new Button("Video", new ImageView(new Image(getClass().getResourceAsStream("images/video.png"))));
 
@@ -75,15 +78,16 @@ public class GUI extends Application {
         grid.add(connectLabel, 0, 0);
         grid.add(connectIP, 1, 0);
         grid.add(connect, 2, 0);
-        grid.add(usernameLabel, 3, 0);
-        grid.add(connectUser, 4, 0);
-        grid.add(connectedUsers, 5, 0);
-        grid.add(sendMessage, 0, 1, 4, 1); // span 4 columns
-        grid.add(disconnect, 4, 1);
-        grid.add(image, 5, 1);
-        grid.add(video, 6, 1);
-        grid.add(consoleScrollPane, 0, 2, 7, 1); // span 7 columns for the console
-        grid.add(usersTextArea, 5, 3, 2, 1); // span 2 columns for the user list
+        grid.add(disconnect, 3, 0);
+        grid.add(usernameLabel, 4, 0);
+        grid.add(connectUser, 5, 0);
+        grid.add(Spacer,6,0);
+        grid.add(video, 7, 0);
+        grid.add(image, 8, 0);
+        grid.add(connectedUsersLabel, 7, 1);
+        grid.add(sendMessage, 0, 20, 4, 1); // span 4 columns
+        grid.add(consoleScrollPane, 0, 2, 7, 12); // span 7 columns for the console
+        grid.add(usersTextArea, 7, 2, 2, 1); // span 2 columns for the user list
         // Set event handlers
         image.setOnAction(e -> {
             if (fileExplore(true, false) && Client.isConnected()) {
