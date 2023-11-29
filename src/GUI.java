@@ -87,6 +87,7 @@ public class GUI extends Application {
         grid.add(connectedUsersLabel, 7, 1);
         grid.add(sendMessage, 0, 20, 4, 1); // span 4 columns
         grid.add(consoleScrollPane, 0, 2, 7, 12); // span 7 columns for the console
+        grid.add(SendMessageLabel,0,19,4,1);
         grid.add(usersTextArea, 7, 2, 2, 1); // span 2 columns for the user list
         // Set event handlers
         image.setOnAction(e -> {
