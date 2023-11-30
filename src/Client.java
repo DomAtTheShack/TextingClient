@@ -20,6 +20,7 @@ public class Client {
         try {
             socket = new Socket(server[0], Integer.parseInt(server[1]));
             out = new ObjectOutputStream(socket.getOutputStream());
+            ObjectInputStream objectInputStream = new ObjectInputStream(socket.getInputStream());
 
             // Send the user information
             Packet userPacket = new Packet(user, Packet.Type.Message, getRoom());
@@ -27,15 +28,15 @@ public class Client {
             Packet.sendObjectAsync(out, userPacket);
             connected = true;
             currentClients = new ArrayList<>();
-            Thread.sleep(1000);
-            requestClientList(out);
+            while(!Packet.receiveObject(objectInputStream).getID().equals(Packet.Type.Ping))
+            {
+
+            }
 
             // Create a separate thread to handle receiving messages from the server
             new Thread(() -> {
                 try {
-                    ObjectInputStream objectInputStream = new ObjectInputStream(socket.getInputStream());
-
-                    while (connected) {
+                     while (connected) {
                         // Receive Message object
                         Packet receivedPacket = Packet.receiveObject(objectInputStream);
                         if (receivedPacket != null) {
@@ -70,8 +71,8 @@ public class Client {
                 while (connected) {
                     try {
                         while (true) {
-                            Thread.sleep(10000);
                             requestClientList(out);
+                            Thread.sleep(10000);
                         }
                     } catch (InterruptedException | IOException e) {
                         throw new RuntimeException(e);
@@ -92,6 +93,8 @@ public class Client {
             if (e.getMessage().contains("Connection Reset") || e.getMessage().contains("Connection refused: connect") || e.getMessage().contains("UnknownHostException:")) {
                 System.out.println("Server Not Available");
             }
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
         }
     }
 

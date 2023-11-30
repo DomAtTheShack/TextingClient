@@ -1,8 +1,8 @@
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
+import javafx.geometry.VPos;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
@@ -12,6 +12,7 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
@@ -27,7 +28,7 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.Optional;
+import java.util.Objects;
 
 public class GUI extends Application {
     private static TextArea usersTextArea;
@@ -58,8 +59,10 @@ public class GUI extends Application {
         Label SendMessageLabel = new Label("Message Here: ");
         TextField sendMessage = new TextField();
         HBox Spacer = new HBox(2);
-        Button image = new Button("Image", new ImageView(new Image(getClass().getResourceAsStream("images/image.png"))));
-        Button video = new Button("Video", new ImageView(new Image(getClass().getResourceAsStream("images/video.png"))));
+        Button image = new Button("Image", new ImageView(
+                new Image(Objects.requireNonNull(getClass().getResourceAsStream("images/image.png")))));
+        Button video = new Button("Video", new ImageView(
+                new Image(Objects.requireNonNull(getClass().getResourceAsStream("images/video.png")))));
 
         TextArea consoleTextArea = new TextArea();
         consoleTextArea.setEditable(false);
@@ -68,6 +71,8 @@ public class GUI extends Application {
         consoleScrollPane.setFitToHeight(true);
         usersTextArea = new TextArea();
         usersTextArea.setEditable(false);
+        GridPane.setValignment(usersTextArea, VPos.TOP); // Align to the top
+        GridPane.setVgrow(usersTextArea, Priority.ALWAYS); // Allow vertical growth
 
         // Redirect System.out and System.err to the TextArea
         PrintStream printStream = new PrintStream(new CustomOutputStream(consoleTextArea));
@@ -88,8 +93,7 @@ public class GUI extends Application {
         grid.add(sendMessage, 0, 20, 4, 1); // span 4 columns
         grid.add(consoleScrollPane, 0, 2, 7, 12); // span 7 columns for the console
         grid.add(SendMessageLabel,0,19,4,1);
-        grid.add(usersTextArea, 7, 2, 2, 1); // span 2 columns for the user list
-        // Set event handlers
+        grid.add(usersTextArea, 7, 2,2,1);        // Set event handlers
         image.setOnAction(e -> {
             if (fileExplore(true, false) && Client.isConnected()) {
                 try {
@@ -124,7 +128,7 @@ public class GUI extends Application {
             } else if (!Client.isConnected()) {
                 new Thread(() -> {
                     try {
-                        Client.connect(getIpPort(connectIP.getText()), connectUser.getText());
+                        Client.connect(getIpPort(connectIP.getText().trim()), connectUser.getText());
                     } catch (InterruptedException ex) {
                         throw new RuntimeException(ex);
                     }
