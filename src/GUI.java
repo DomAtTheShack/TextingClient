@@ -123,7 +123,7 @@ public class GUI extends Application {
         connect.setOnAction(actionEvent -> {
             if (getIpPort(connectIP.getText())[0] == null || getIpPort(connectIP.getText())[1] == null) {
                 System.out.println("Invalid IP/Port");
-            } else if (connectUser.getText().length() > 24 || connectUser.getText().equals("") || connectUser.getText().endsWith(" ") || connectUser.getText().charAt(0) == ' ') {
+            } else if (connectUser.getText().length() > 24 || connectUser.getText().isEmpty() || connectUser.getText().endsWith(" ") || connectUser.getText().charAt(0) == ' ') {
                 System.out.println("Invalid Username: Check Spaces and Length");
             } else if (!Client.isConnected()) {
                 new Thread(() -> {
@@ -243,7 +243,7 @@ public class GUI extends Application {
 
         @Override
         public void write(int b) {
-            textArea.appendText(String.valueOf((char) b));
+            Platform.runLater(() -> textArea.appendText(String.valueOf((char) b)));
             textArea.positionCaret(textArea.getLength());
         }
     }
@@ -327,14 +327,14 @@ public class GUI extends Application {
     }
 
     public static void clear() {
-        usersTextArea.setText("");
+        Platform.runLater(() -> usersTextArea.setText(""));
     }
 
     public static void addText(String x) {
         String str = x.replace("null", "");
 
         Platform.runLater(() -> {
-            usersTextArea.appendText(str);
+            Platform.runLater(() -> usersTextArea.appendText(str));
         });
     }
 

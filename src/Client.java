@@ -23,15 +23,11 @@ public class Client {
             ObjectInputStream objectInputStream = new ObjectInputStream(socket.getInputStream());
 
             // Send the user information
-            Packet userPacket = new Packet(user, Packet.Type.Message, getRoom());
             username = user;
-            Packet.sendObjectAsync(out, userPacket);
+            Packet.sendObjectAsync(out, new Packet(user, Packet.Type.Message, getRoom()));
             connected = true;
             currentClients = new ArrayList<>();
-            while(!Packet.receiveObject(objectInputStream).getID().equals(Packet.Type.Ping))
-            {
-
-            }
+            requestClientList(out);
 
             // Create a separate thread to handle receiving messages from the server
             new Thread(() -> {
@@ -93,8 +89,6 @@ public class Client {
             if (e.getMessage().contains("Connection Reset") || e.getMessage().contains("Connection refused: connect") || e.getMessage().contains("UnknownHostException:")) {
                 System.out.println("Server Not Available");
             }
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
         }
     }
 
