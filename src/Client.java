@@ -1,4 +1,6 @@
-import java.io.*;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
@@ -20,19 +22,21 @@ public class Client {
         try {
             socket = new Socket(server[0], Integer.parseInt(server[1]));
             out = new ObjectOutputStream(socket.getOutputStream());
-            ObjectInputStream objectInputStream = new ObjectInputStream(socket.getInputStream());
 
             // Send the user information
+            Packet userPacket = new Packet(user, Packet.Type.Message, getRoom());
             username = user;
-            Packet.sendObjectAsync(out, new Packet(user, Packet.Type.Message, getRoom()));
+            Packet.sendObjectAsync(out, userPacket);
             connected = true;
             currentClients = new ArrayList<>();
-            requestClientList(out);
+            Thread.sleep(1000);
 
             // Create a separate thread to handle receiving messages from the server
             new Thread(() -> {
                 try {
-                     while (connected) {
+                    ObjectInputStream objectInputStream = new ObjectInputStream(socket.getInputStream());
+
+                    while (connected) {
                         // Receive Message object
                         Packet receivedPacket = Packet.receiveObject(objectInputStream);
                         if (receivedPacket != null) {
@@ -63,15 +67,22 @@ public class Client {
                     throw new RuntimeException(e);
                 }
             }).start();
+            try {
+                requestClientList(out);
+            }catch (NullPointerException e){
+
+                requestClientList(out);
+            }
             new Thread(() -> {
                 while (connected) {
                     try {
                         while (true) {
-                            requestClientList(out);
                             Thread.sleep(10000);
+
+                            requestClientList(out);
                         }
-                    } catch (InterruptedException | IOException e) {
-                        throw new RuntimeException(e);
+                    } catch (InterruptedException | IOException | NullPointerException e) {
+                        //Do nothing so no error is thrown
                     }
                 }
             }).start();
@@ -113,7 +124,11 @@ public class Client {
                     clients[0] += (x) + ("\n");
                 }
                 GUI.addText("Room #" + room + "\n");
-                GUI.addText(clients[0]);
+                try {
+                    GUI.addText(clients[0]);
+                }catch (NullPointerException e){
+                    GUI.clear();
+                }
             }).start();
         }
     }
