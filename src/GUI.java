@@ -2,6 +2,7 @@ import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.VPos;
+import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -34,6 +35,8 @@ public class GUI extends Application {
     private static TextArea usersTextArea;
     private static String imagePath;
     private static String videoPath;
+    private static final GridPane grid = new GridPane();
+
 
     public static void main(String[] args) {
         launch(args);
@@ -43,7 +46,6 @@ public class GUI extends Application {
     public void start(Stage primaryStage) {
         primaryStage.setTitle("ChatterBox");
 
-        GridPane grid = new GridPane();
         grid.setPadding(new Insets(10, 10, 10, 10));
         grid.setVgap(12);
         grid.setHgap(8);
@@ -59,23 +61,29 @@ public class GUI extends Application {
         Label SendMessageLabel = new Label("Message Here: ");
         TextField sendMessage = new TextField();
         HBox Spacer = new HBox(2);
+
         Button image = new Button("Image", new ImageView(
-                new Image(Objects.requireNonNull(getClass().getResourceAsStream("images/image.png")))));
+                new Image(Objects.requireNonNull
+                        (getClass().getResourceAsStream("images/image.png")))));
         Button video = new Button("Video", new ImageView(
-                new Image(Objects.requireNonNull(getClass().getResourceAsStream("images/video.png")))));
+                new Image(Objects.requireNonNull
+                        (getClass().getResourceAsStream("images/video.png")))));
 
         TextArea consoleTextArea = new TextArea();
         consoleTextArea.setEditable(false);
-        ScrollPane consoleScrollPane = new ScrollPane(consoleTextArea); // Wrap the TextArea in a ScrollPane
+        ScrollPane consoleScrollPane =
+                new ScrollPane(consoleTextArea); // Wrap the TextArea in a ScrollPane
         consoleScrollPane.setFitToWidth(true);
         consoleScrollPane.setFitToHeight(true);
+
         usersTextArea = new TextArea();
         usersTextArea.setEditable(false);
         GridPane.setValignment(usersTextArea, VPos.TOP); // Align to the top
         GridPane.setVgrow(usersTextArea, Priority.ALWAYS); // Allow vertical growth
 
         // Redirect System.out and System.err to the TextArea
-        PrintStream printStream = new PrintStream(new CustomOutputStream(consoleTextArea));
+        PrintStream printStream = new PrintStream(
+                new CustomOutputStream(consoleTextArea));
         System.setOut(printStream);
         System.setErr(printStream);
 
@@ -89,16 +97,19 @@ public class GUI extends Application {
         grid.add(Spacer,6,0);
         grid.add(video, 7, 0);
         grid.add(image, 8, 0);
+
         grid.add(connectedUsersLabel, 7, 1);
-        grid.add(sendMessage, 0, 20, 4, 1); // span 4 columns
-        grid.add(consoleScrollPane, 0, 2, 7, 12); // span 7 columns for the console
+        grid.add(sendMessage, 0, 20, 4, 1);         // span 4 columns
+
+        grid.add(consoleScrollPane, 0, 2, 7, 12);   // span 7 columns for the console
         grid.add(SendMessageLabel,0,19,4,1);
-        grid.add(usersTextArea, 7, 2,2,1);        // Set event handlers
+        grid.add(usersTextArea, 7, 2,2,1);          // Set event handlers
+
         image.setOnAction(e -> {
             if (fileExplore(true, false) && Client.isConnected()) {
                 try {
                     Packet.sendObjectAsync(Client.out, sendImage(imagePath));
-                    imagePath = null;
+                    imagePath = "";
                 } catch (IOException ex) {
                     throw new RuntimeException(ex);
                 }
@@ -109,34 +120,49 @@ public class GUI extends Application {
             if (Client.isConnected()) {
                 if (sendMessage.getText().startsWith("/room ")) {
                     if (getRoom(sendMessage.getText()) != -1) {
-                        Client.packet = new Packet(getRoom((sendMessage.getText())), Packet.Type.RoomChange, Client.getUsername(), Client.getRoom());
+                        Client.packet = new Packet(getRoom((sendMessage.getText())),
+                                Packet.Type.RoomChange,
+                                Client.getUsername(), Client.getRoom());
                     }
                 } else {
-                    Client.packet = new Packet(sendMessage.getText(), Packet.Type.Message, Client.getRoom());
+                    Client.packet = new Packet(sendMessage.getText(),
+                            Packet.Type.Message, Client.getRoom());
                 }
                 sendMessage.setText("");
             } else {
-                System.out.println("Not Connected");
+                Platform.runLater(() -> System.out.println("Not Connected"));
             }
         });
 
+        //Listens for the connected button then
+        // checks both username and IP to see if its entered incorrectly
+
         connect.setOnAction(actionEvent -> {
-            if (getIpPort(connectIP.getText())[0] == null || getIpPort(connectIP.getText())[1] == null) {
-                System.out.println("Invalid IP/Port");
-            } else if (connectUser.getText().length() > 24 || connectUser.getText().isEmpty() || connectUser.getText().endsWith(" ") || connectUser.getText().charAt(0) == ' ') {
-                System.out.println("Invalid Username: Check Spaces and Length");
+            String[] IP = getIpPort(connectIP.getText());
+            if (IP[0].isEmpty() || IP[1].isEmpty()) {
+                Platform.runLater(() -> System.out.println("Invalid IP/Port"));
+            } else if (connectUser.getText().length() > 24 ||
+                        connectUser.getText().isEmpty() ||
+                        connectUser.getText().endsWith(" ") ||
+                        connectUser.getText().startsWith(" ")) {
+                Platform.runLater(() -> System.out.println("Invalid Username:" +
+                        " Check Spaces and Length"));
             } else if (!Client.isConnected()) {
                 new Thread(() -> {
                     try {
-                        Client.connect(getIpPort(connectIP.getText().trim()), connectUser.getText());
+                        Client.connect(getIpPort(connectIP.getText().trim())
+                                , connectUser.getText());
                     } catch (InterruptedException ex) {
                         throw new RuntimeException(ex);
                     }
                 }).start();
             } else {
-                System.out.println("Already connected!");
+                Platform.runLater(() -> System.out.println("Already connected!"));
             }
         });
+
+        //Sets the listener for the disconnect
+        // button to disconnect the user if connected
 
         disconnect.setOnAction(actionEvent -> {
             try {
@@ -146,11 +172,14 @@ public class GUI extends Application {
             }
         });
 
+        //Sets the Action Listener to Open the
+        // file explorer and select a proper video file
+
         video.setOnAction(e -> {
             if (fileExplore(false, true) && Client.isConnected()) {
                 try {
                     Packet.sendObjectAsync(Client.out, sendData(videoPath));
-                    videoPath = null;
+                    videoPath = "";
                 } catch (IOException ex) {
                     throw new RuntimeException(ex);
                 }
@@ -182,11 +211,17 @@ public class GUI extends Application {
         FileChooser fileChooser = new FileChooser();
         File selectedFile;
         if (image) {
-            fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Image Files", "*.png", "*.jpg", "*.gif"));
+            fileChooser.getExtensionFilters().add
+                    (new FileChooser.ExtensionFilter
+                            ("Image Files", "*.png", "*.jpg", "*.gif"));
+
             selectedFile = fileChooser.showOpenDialog(null);
             imagePath = selectedFile != null ? selectedFile.getAbsolutePath() : null;
         } else if (video) {
-            fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Video Files", "*.mp4", "*.avi", "*.mkv"));
+            fileChooser.getExtensionFilters().add
+                    (new FileChooser.ExtensionFilter
+                            ("Video Files", "*.mp4", "*.avi", "*.mkv"));
+
             selectedFile = fileChooser.showOpenDialog(null);
             videoPath = selectedFile != null ? selectedFile.getAbsolutePath() : null;
         }
@@ -198,7 +233,8 @@ public class GUI extends Application {
         int index = room.indexOf("/room ");
         if (index != -1) {
             try {
-                return Integer.parseInt(room.substring(index + "/room ".length()));
+                return Integer.parseInt(
+                        room.substring(index + "/room ".length()));
             } catch (NumberFormatException e) {
                 return -1;
             }
@@ -210,7 +246,8 @@ public class GUI extends Application {
         byte[] sendData = loadFileToByteArray(dataPath);
 
         // Create the message with the data
-        return new Packet(sendData, Packet.Type.Video, usersTextArea.getText(), Client.getRoom());
+        return new Packet(sendData,
+                Packet.Type.Video, usersTextArea.getText(), Client.getRoom());
     }
 
     private static byte[] loadFileToByteArray(String filePath) {
@@ -234,7 +271,7 @@ public class GUI extends Application {
         }
     }
 
-    private class CustomOutputStream extends OutputStream {
+    private static class CustomOutputStream extends OutputStream {
         private final TextArea textArea;
 
         public CustomOutputStream(TextArea textArea) {
@@ -243,70 +280,60 @@ public class GUI extends Application {
 
         @Override
         public void write(int b) {
-            Platform.runLater(() -> textArea.appendText(String.valueOf((char) b)));
-            textArea.positionCaret(textArea.getLength());
+                textArea.appendText(String.valueOf((char) b));
+                textArea.positionCaret(textArea.getLength());
         }
     }
 
     public static void openData(byte[] data, String userSent, String WhatIsSent) {
-        Stage stage = new Stage();
-        stage.setTitle("Display " + WhatIsSent);
-        Label userLabel = new Label("A " + WhatIsSent + " was sent by " + userSent);
-        Button yesButton = new Button("Yes");
-        Button noButton = new Button("No");
+        Platform.runLater(() -> {
+            Stage stage = new Stage();
+            stage.setTitle("Display " + WhatIsSent);
 
-        userLabel.setLayoutX(90);
-        userLabel.setLayoutY(20);
-        yesButton.setLayoutX(100);
-        yesButton.setLayoutY(100);
-        noButton.setLayoutX(200);
-        noButton.setLayoutY(100);
+            Label userLabel = new Label("A " + WhatIsSent + " was sent by " + userSent);
+            Button yesButton = new Button("Yes");
+            Button noButton = new Button("No");
 
-        StackPane stackPane = new StackPane();
+            userLabel.setLayoutX(90);
+            userLabel.setLayoutY(20);
 
-        yesButton.setOnAction(e -> {
-            stage.close();
-            Stage displayStage = new Stage();
-            displayStage.setTitle(WhatIsSent + " Display from Byte Array");
+            yesButton.setLayoutX(100);
+            yesButton.setLayoutY(100);
 
-            if (WhatIsSent.equals("Image")) {
-                // Convert byte[] to Image
-                Image image = convertToImage(data);
+            noButton.setLayoutX(200);
+            noButton.setLayoutY(100);
 
-                // Create an ImageView to display the image
-                ImageView imageView = new ImageView(image);
+            StackPane stackPane = new StackPane();
 
-                // Add the ImageView to the StackPane
-                stackPane.getChildren().add(imageView);
-            } else {
-                try {
-                    // Play video
-                    playVideo(data);
-                } catch (IOException ex) {
-                    throw new RuntimeException(ex);
+            yesButton.setOnAction(e -> {
+
+                stage.close();
+                Stage displayStage = new Stage();
+                displayStage.setTitle(WhatIsSent + " Display from Byte Array");
+
+                if (WhatIsSent.equals("Image")) {
+                    Image image = convertToImage(data);
+                    ImageView imageView = new ImageView(image);
+                    stackPane.getChildren().add(imageView);
+                    Scene scene = new Scene(stackPane, 800, 600);
+                    displayStage.setScene(scene);
+                    displayStage.show();
+                } else {
+                    try {
+                        playVideo(data);
+                    } catch (IOException ex) {
+                        throw new RuntimeException(ex);
+                    }
                 }
-            }
+            });
 
-            // Create a Scene with the StackPane
-            Scene scene = new Scene(stackPane, 800, 600);
+            noButton.setOnAction(e -> stage.close());
 
-            // Set the Scene on the Stage
-            displayStage.setScene(scene);
-
-            // Show the Stage
-            displayStage.show();
+            Group root = new Group(userLabel, yesButton, noButton);
+            Scene scene = new Scene(root, 400, 200);
+            stage.setScene(scene);
+            stage.showAndWait();
         });
-
-        noButton.setOnAction(e -> stage.close());
-
-        stackPane.getChildren().addAll(userLabel, yesButton, noButton);
-
-        // Create a Scene and set it on the Stage
-        Scene scene = new Scene(stackPane, 400, 200);
-        stage.setScene(scene);
-
-        // Show the Stage
-        stage.showAndWait();
     }
 
     private static Image convertToImage(byte[] data) {
@@ -315,16 +342,22 @@ public class GUI extends Application {
     }
 
     private static void playVideo(byte[] video) throws IOException {
-        // Create a temporary file
-        Path tempFile = Files.createTempFile("chatterVid", ".mp4");
-        Files.write(tempFile, video, StandardOpenOption.WRITE);
-        File videoFile = new File(tempFile.toString());
+        Platform.runLater(() -> {
+            try {
+                Path tempFile = Files.createTempFile("chatterVid", ".mp4");
+                Files.write(tempFile, video, StandardOpenOption.WRITE);
+                File videoFile = new File(tempFile.toString());
 
-        if (videoFile.exists()) {
-            Desktop desktop = Desktop.getDesktop();
-            desktop.open(videoFile);
-        }
+                if (videoFile.exists()) {
+                    Desktop desktop = Desktop.getDesktop();
+                    desktop.open(videoFile);
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
+
 
     public static void clear() {
         Platform.runLater(() -> usersTextArea.setText(""));
@@ -341,21 +374,26 @@ public class GUI extends Application {
     public static Packet sendImage(String path) throws IOException {
         BufferedImage image = ImageIO.read(new File(path));
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
         ImageIO.write(image, "jpg", baos);
         byte[] imageByteArray = baos.toByteArray();
 
         // Create the message with the image data
-        return new Packet(imageByteArray, Packet.Type.Image, Client.getUsername(), Client.getRoom());
+        return new Packet(imageByteArray,
+                Packet.Type.Image, Client.getUsername(), Client.getRoom());
     }
     public static void playSound() {
-      /*  if(!f.isFocused()) {
-            java.awt.Toolkit toolkit = java.awt.Toolkit.getDefaultToolkit();
-            toolkit.beep();  // Play a beep sound
-            new Thread(GUI::playWav).start();
-            f.toFront();  // Bring the frame to the front
-            toolkit.beep();  // Play a beep sound
-        }*/
-        playWav();
+        Platform.runLater(() -> {
+            if(!grid.isFocused()) {
+                java.awt.Toolkit toolkit = java.awt.Toolkit.getDefaultToolkit();
+                toolkit.beep();  // Play a beep sound
+
+                new Thread(GUI::playWav).start();
+
+                grid.toFront();  // Bring the frame to the front
+                toolkit.beep();  // Play a beep sound
+            }
+        });
     }
     public static void playWav() {
         try
@@ -364,7 +402,9 @@ public class GUI extends Application {
             URL pingUrl = GUI.class.getResource("sounds/ping.wav");
             clip.open(AudioSystem.getAudioInputStream(pingUrl));
             clip.start();
-            FloatControl gainControl = (FloatControl) clip.getControl(FloatControl.Type.MASTER_GAIN);
+
+            FloatControl gainControl = (FloatControl)
+                    clip.getControl(FloatControl.Type.MASTER_GAIN);
             gainControl.setValue(-25.0f);
 
             // Wait for the sound to finish

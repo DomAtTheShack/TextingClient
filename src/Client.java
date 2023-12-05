@@ -1,3 +1,5 @@
+import javafx.application.Platform;
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -47,14 +49,14 @@ public class Client {
                                 room = receivedPacket.getRoom();
                                 requestClientList(out);
                             } else if (receivedPacket.getID() == Packet.Type.Image && receivedPacket.getRoom() == room) {
-                                GUI.openData(receivedPacket.getByteData(), receivedPacket.getUserSent(), "Image");
+                                Platform.runLater(() -> GUI.openData(receivedPacket.getByteData(), receivedPacket.getUserSent(), "Image"));
                                 GUI.playSound();
                             } else if(receivedPacket.getID() == Packet.Type.Video && receivedPacket.getRoom() == room){
-                                GUI.openData(receivedPacket.getByteData(), receivedPacket.getUserSent(), "Video");
+                                Platform.runLater(() -> GUI.openData(receivedPacket.getByteData(), receivedPacket.getUserSent(), "Video"));
                                 GUI.playSound();
                             } else if(receivedPacket.getID() == Packet.Type.Message && receivedPacket.getRoom() == room){
                                 // Handle regular messages
-                                System.out.println(receivedPacket.getMessage());
+                                Platform.runLater(() -> printText(receivedPacket.getMessage()));
                                 GUI.playSound();
                             }
                         }
@@ -86,7 +88,7 @@ public class Client {
                     }
                 }
             }).start();
-            System.out.println("Don't be like Jorge!");
+            printText("Don't be like Jorge!");
             while (true) {
                 while (packet != null) {
                     Packet.sendObjectAsync(out, packet);
@@ -98,13 +100,18 @@ public class Client {
             connected = false;
             e.printStackTrace();
             if (e.getMessage().contains("Connection Reset") || e.getMessage().contains("Connection refused: connect") || e.getMessage().contains("UnknownHostException:")) {
-                System.out.println("Server Not Available");
+                printText("Server Not Available");
             }
         }
     }
 
     public static boolean isConnected() {
         return connected;
+    }
+    private static void printText(String message) {
+        Platform.runLater(() -> {
+            System.out.println(message);
+        });
     }
 
     public static void requestClientList(ObjectOutputStream out) throws InterruptedException, IOException {
@@ -140,8 +147,10 @@ public class Client {
             connected = false;
             Thread.sleep(100);
             socket.close();
+            // Inform the user about the disconnection status
+            printText("Disconnected from the server!");
         } else {
-            System.out.println("Not Connected!");
+            printText("Not Connected!");
         }
     }
 
